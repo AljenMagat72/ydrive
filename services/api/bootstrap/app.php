@@ -3,6 +3,9 @@
 use App\Http\Middleware\HandleAdminKey;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Models\City;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -34,5 +37,32 @@ return Application::configure(basePath: dirname(__DIR__))
   })
   ->withExceptions(function (Exceptions $exceptions) {
     //
+  })
+  ->withSchedule(function (Schedule $schedule) {
+    $cities = config('autofleet.cities');
+
+    foreach ($cities as $cityName => $city) {
+      $schedule->command("driver:warn-minimum-hours \"$cityName\"")
+        ->timezone($city['timezone'])
+        ->wednesdays()
+        ->at('17:00')
+        ->withoutOverlapping();
+
+      $schedule->command("driver:warn-acceptance-rate \"$cityName\"")
+        ->timezone($city['timezone'])
+        ->thursdays()
+        ->at('20:00')
+        ->withoutOverlapping();
+
+      $schedule->command("driver:move-drivers \"$cityName\"")
+        ->timezone($city['timezone'])
+        ->fridays()
+        ->at('08:00')
+        ->withoutOverlapping();
+    }
+
+    $schedule->command('driver:update-acceptance-rate')
+      ->dailyAt('00:00')
+      ->withoutOverlapping();
   })
   ->create();

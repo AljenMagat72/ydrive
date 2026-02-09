@@ -116,7 +116,7 @@ class DriverScheduleService
       })
       ->when($city !== 'All', function ($query) use ($city) {
         $query->whereHas('driver', function ($query) use ($city) {
-          $query->where('city_id', '=', $city);
+          $query->where('city_id', 'LIKE', "%$city%");
         });
       })
       ->orderBy('starts_at')

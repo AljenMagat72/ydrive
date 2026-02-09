@@ -40,21 +40,27 @@ return [
   'cities' => [
     'peterborough' => [
       'business_model' => 'peterborough',
+      'timezone' => 'America/Toronto',
     ],
     'sudbury' => [
       'business_model' => 'sudbury',
+      'timezone' => 'America/Toronto',
     ],
     'medicine_hat' => [
       'business_model' => 'medicine_hat',
+      'timezone' => 'America/Edmonton',
     ],
     'cobourg' => [
       'business_model' => 'peterborough',
+      'timezone' => 'America/Toronto',
     ],
     'lindsay' => [
       'business_model' => 'peterborough',
+      'timezone' => 'America/Toronto',
     ],
     'lethbridge' => [
       'business_model' => 'lethbridge',
+      'timezone' => 'America/Edmonton',
     ]
   ]
 ];

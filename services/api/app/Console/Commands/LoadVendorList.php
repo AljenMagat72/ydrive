@@ -10,79 +10,81 @@ use Symfony\Component\Console\Command\Command as SymfonyCommand;
 
 class LoadVendorList extends Command
 {
-    protected $autoFleetService;
+  protected $autoFleetService;
 
-    public function __construct(AutoFleetService $autoFleetService)
-    {
-        parent::__construct();
-        $this->autoFleetService = $autoFleetService;
+  public function __construct(AutoFleetService $autoFleetService)
+  {
+    parent::__construct();
+    $this->autoFleetService = $autoFleetService;
+  }
+
+  /**
+   * The name and signature of the console command.
+   *
+   * @var string
+   */
+  protected $signature = 'app:load-vendor-list';
+
+  /**
+   * The console command description.
+   *
+   * @var string
+   */
+  protected $description = 'Load vendor liststo match the NO OPPS vendor list with the actual vendor list.';
+
+  /**
+   * Execute the console command.
+   */
+  public function handle()
+  {
+    $vendorLists = $this->autoFleetService->getVendorList();
+
+    $normal = [];
+    $noOpps = [];
+
+    foreach ($vendorLists as $item) {
+      $name = trim($item['name']);
+      $key = strtolower($name);
+
+      if (str_contains($name, "NO OPPS")) {
+        $clean = trim(str_replace("NO OPPS ", "", $name));
+        $cleanKey = strtolower($clean);
+
+        $noOpps[$cleanKey] = $item;
+      } else {
+        $normal[$key] = $item;
+      }
     }
 
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'app:load-vendor-list';
+    $countInserted = 0;
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Load vendor liststo match the NO OPPS vendor list with the actual vendor list.';
+    foreach ($normal as $key => $vendor) {
+      $noOppsVendor = $noOpps[$key] ?? ['name' => 'No NO OPPS Vendor'];
 
-    /**
-     * Execute the console command.
-     */
-    public function handle()
-    {
-        $vendorLists = $this->autoFleetService->getVendorList();
+      $exists = VendorList::where('vendor_id', $vendor['name'])->exists();
 
-        $normal = [];
-        $noOpps = [];
+      if ($exists) {
+        $this->warn("Skipping existing vendor: {$vendor['name']}");
+        continue;
+      }
 
-        foreach ($vendorLists as $item) {
-            $name = trim($item['name']);
-            $key = strtolower($name);
+      VendorList::insert([
+        'vendor_id' => $vendor['id'] ?? 0,
+        'vendor_name' => $vendor['name'] ?? '',
+        'no_opps_id' => $noOppsVendor['id'] ?? 0,
+        'no_opps_name' => $noOppsVendor['name'] ?? '',
+        'created_at' => now(),
+        'updated_at' => now(),
+      ]);
 
-            if (str_contains($name, "NO OPPS")) {
-                $clean = trim(str_replace("NO OPPS ", "", $name));
-                $cleanKey = strtolower($clean);
-
-                $noOpps[$cleanKey] = $item;
-            } else {
-                $normal[$key] = $item;
-            }
-        }
-
-        $countInserted = 0;
-
-        foreach ($normal as $key => $vendor) {
-            $noOppsVendor = $noOpps[$key] ?? ['name' => 'No NO OPPS Vendor'];
-
-            $exists = VendorList::where('vendor_id', $vendor['name'])->exists();
-
-            if ($exists) {
-                $this->warn("Skipping existing vendor: {$vendor['name']}");
-                continue;
-            }
-
-            VendorList::insert([
-                'vendor_id' => $vendor['name'],
-                'no_opps_id' => $noOppsVendor['name'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $this->info("Inserted: {$vendor['name']}  | NO OPPS: " . ($noOppsVendor['name'] ?? 'none'));
-            $countInserted++;
-        }
-
-        $this->info("--------------------------------------------------");
-        $this->info("Vendor list loading complete! Inserted: {$countInserted} vendors.");
-        $this->info("--------------------------------------------------");
-
-        return SymfonyCommand::SUCCESS;
+      $this->info("Inserted: {$vendor['name']}  | NO OPPS: " . ($noOppsVendor['name'] ?? 'none'));
+      $countInserted++;
     }
+
+    $this->info("--------------------------------------------------");
+    $this->info("Vendor list loading complete! Inserted: {$countInserted} vendors.");
+    $this->info("--------------------------------------------------");
+
+    return SymfonyCommand::SUCCESS;
+  }
 }

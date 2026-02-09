@@ -2,35 +2,23 @@
 
 namespace App\Http\Controllers;
 
-<<<<<<< HEAD
-use App\Services\VendorService;
-=======
 use App\Models\Driver;
 use App\Models\VendorList;
->>>>>>> aab1ea2d5472ef05a4be17b39c2807651c2e17b5
+use App\Services\AutoFleetService;
 use Illuminate\Http\Request;
 
 
 class VendorController extends Controller
 {
-<<<<<<< HEAD
-    protected $vendorService;
-
-    public function __construct(VendorService $vendorService)
+    public function __construct(protected AutoFleetService $autofleetService)
     {
-        $this->vendorService = $vendorService;
+        $this->autofleetService = $autofleetService;
     }
 
     public function all(Request $request)
     {
         try {
-            $vendors = $this->vendorService->getAllVendors();
-=======
-    public function all(Request $request)
-    {
-        try {
             $vendors = VendorList::get();
->>>>>>> aab1ea2d5472ef05a4be17b39c2807651c2e17b5
 
             return response()->json([
                 'vendors' => $vendors,
@@ -45,22 +33,45 @@ class VendorController extends Controller
     public function update(Request $request)
     {
         $driverId = $request->get('driver_id');
-        $vendorId = $request->get('vendor_id');
+        $vendorName = $request->get('vendor_id');
+        $autofleetDriverId = $request->get('autofleet_driver_id');
 
         try {
-<<<<<<< HEAD
-            $this->vendorService->update($driverId, $vendorId);
-=======
-            $noOppsId = VendorList::where('vendor_id', $vendorId)
-                ->get()
-                ->value('no_opps_id');
+            $driver = Driver::findOrFail($driverId);
 
-            Driver::where('id', $driverId)
-                ->update([
-                    'city_id' => $noOppsId,
-                    'is_active' => false
-                ]);
->>>>>>> aab1ea2d5472ef05a4be17b39c2807651c2e17b5
+            $driverFromAutofleet = $this->autofleetService->getDriverById($autofleetDriverId);
+            $labelValue = $driverFromAutofleet['labels'][0]['value'] ?? null;
+
+            $vendor = null;
+
+            if (!empty($driverFromAutofleet['vendorId'])) {
+                $vendor = VendorList::where('vendor_id', $driverFromAutofleet['vendorId'])->first();
+            }
+
+            if ($labelValue && $labelValue !== $vendorName) {
+                $driver->city_id = $labelValue;
+                $vendor = VendorList::where('vendor_name', $labelValue)->first();
+            }
+
+            if (!$vendor) {
+                $vendor = VendorList::where('vendor_name', $vendorName)->first();
+            }
+
+            if (!$vendor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vendor could not be resolved',
+                ], 422);
+            }
+
+            $driver->vendor_list_id = $vendor->id;
+            $driver->is_delinquent = true;
+            $driver->save();
+
+            $this->autofleetService->updateDriver(
+                $autofleetDriverId,
+                ['vendorId' => $vendor->no_opps_id]
+            );
 
             return response()->json([
                 'success' => true,
@@ -68,10 +79,7 @@ class VendorController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'success' => false,
-<<<<<<< HEAD
-=======
                 'error' => $th->getMessage(),
->>>>>>> aab1ea2d5472ef05a4be17b39c2807651c2e17b5
             ], 500);
         }
     }
@@ -79,13 +87,9 @@ class VendorController extends Controller
     public function get(Request $request)
     {
         try {
-<<<<<<< HEAD
-            $noOppsDrivers = $this->vendorService->getNoOppsDrivers();
-=======
-            $noOppsDrivers =  Driver::where('city_id', 'LIKE', '%NO OPPS%')
+            $noOppsDrivers =  Driver::where('vendor_list_id', '!=', null)
                 ->orderByDesc('created_at')
                 ->get();
->>>>>>> aab1ea2d5472ef05a4be17b39c2807651c2e17b5
 
             return response()->json([
                 'drivers' => $noOppsDrivers,
@@ -102,22 +106,19 @@ class VendorController extends Controller
     public function revert(Request $request)
     {
         $driverId = $request->get('driver_id');
-        $noOppsId = $request->get('no_opps_id');
+        $vendorName = $request->get('vendor_name');
+        $autofleetDriverId = $request->get('autofleet_driver_id');
 
         try {
-<<<<<<< HEAD
-            $this->vendorService->revert($driverId, $noOppsId);
-=======
-            $vendorId = VendorList::where('no_opps_id', $noOppsId)
-                ->get()
-                ->value('vendor_id');
+            $driverFromAutofleet = $this->autofleetService->getDriverById($autofleetDriverId);
 
-            Driver::where('id', $driverId)
-                ->update([
-                    'city_id' => $vendorId,
-                    'is_active' => true
-                ]);
->>>>>>> aab1ea2d5472ef05a4be17b39c2807651c2e17b5
+            $vendorId = VendorList::where('no_opps_id', $driverFromAutofleet['vendorId'])->value('vendor_id');
+
+            $driver = Driver::where('id', $driverId)->first();
+            $driver->is_delinquent = false;
+            $driver->save();
+
+            $this->autofleetService->updateDriver($autofleetDriverId, ['vendorId' => $vendorId]);
 
             return response()->json([
                 'success' => true,
@@ -125,10 +126,7 @@ class VendorController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'success' => false,
-<<<<<<< HEAD
-=======
                 'error' => $th->getMessage(),
->>>>>>> aab1ea2d5472ef05a4be17b39c2807651c2e17b5
             ], 500);
         }
     }

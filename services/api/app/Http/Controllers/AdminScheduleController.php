@@ -9,6 +9,7 @@ use Carbon\Carbon;
 
 class AdminScheduleController extends Controller
 {
+
     /**
      * Add new split schedule.
      *
@@ -32,7 +33,6 @@ class AdminScheduleController extends Controller
             if ($startsAt->isSameDay($endsAt)) {
 
                 $newSchedule = DriverSchedule::create($validated);
-
                 array_push($newScheduleIds, $newSchedule->id);
             } else {
                 $newSchedule = DriverSchedule::create([
@@ -40,6 +40,7 @@ class AdminScheduleController extends Controller
                     'starts_at' => $startsAt->toDateTimeString(),
                     'ends_at'   => $startsAt->copy()->addDay()->startOfDay()->toDateTimeString(),
                 ]);
+
                 array_push($newScheduleIds, $newSchedule->id);
 
                 $newSchedule2 = DriverSchedule::create([

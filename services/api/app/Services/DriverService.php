@@ -10,7 +10,6 @@ use Illuminate\Support\Carbon;
 class DriverService
 {
   protected $autofleet;
-  protected $driverRepository;
 
   public function __construct(AutoFleetService $autofleet)
   {
@@ -19,7 +18,7 @@ class DriverService
 
   public function findOrCreateDriverWithToken(string $phoneNumber): ?array
   {
-    $driver =  Driver::where('phone_number', $phoneNumber)->first()
+    $driver = Driver::where('phone_number', $phoneNumber)->first()
       ?? $this->findOrCreateDriverByPhoneNumber($phoneNumber);
 
     if (!$driver) {
@@ -51,6 +50,19 @@ class DriverService
     return $driver;
   }
 
+  public function findOrCreateDriverById(string $id)
+  {
+    $autofleetDriver = $this->autofleet->getDriverById($id);
+
+    if (!$autofleetDriver || $autofleetDriver['vendor'] === null) {
+      return null;
+    }
+
+    $driver = $this->updateOrCreateAutofleetDriver($autofleetDriver);
+
+    return $driver;
+  }
+
   public function updateOrCreateAutofleetDriver(array $autofleetDriver)
   {
     return Driver::updateOrCreate(
@@ -67,7 +79,7 @@ class DriverService
       ]
     );
   }
-
+  
   public function generateSMSCode(Driver $driver)
   {
     SMSCode::create([
@@ -123,55 +135,43 @@ class DriverService
 
   public function addToDelinquents(Driver $driver)
   {
-    $autofleetDriver = $this->autofleet->getDriverById($driver->autofleet_driver_id);
-    $originalVendorId = $autofleetDriver['vendorId'];
+    if ($driver->is_delinquent)
+      return;
+
+    $noOppsId = VendorList::where('vendor_id', $driver->vendor_id)->value('no_opps_id');
 
     $driver->update([
       'is_delinquent' => true,
-      'original_vendor_id' => $originalVendorId,
     ]);
 
     DriverDelinquentPeriod::create([
       'driver_id' => $driver->id,
-      'started_at' => Carbon::now(),
+      'started_at' => now(),
     ]);
 
-    $cityKey = strtolower(str_replace(' ', '_', $driver->city_id));
+    Log::info("Adding $driver->first_name ($driver->autofleet_driver_id) to delinquents");
 
-    // Get the no_opp_vendor ID from config
-    //$noOppVendorId = config("autofleet.business_models.{$cityKey}.no_opp_vendor") ?? null;
-
-    /*if ($noOppVendorId) {
-      $this->autofleet->updateDriver($driver->autofleet_driver_id, [
-        'vendorId' => $noOppVendorId
-      ]);
-    }*/
+    if ($noOppsId === null)
+      return;
   }
 
   public function removeFromDelinquents(Driver $driver)
   {
-    //$autofleetDriver = $this->autofleet->getDriverById($driver->autofleet_driver_id);
-    $originvalVendorId = $driver->original_vendor_id;
+    if (!$driver->is_delinquent)
+      return;
 
     $driver->update([
-      'original_vendor_id' => null,
       'is_delinquent' => false,
     ]);
 
-    $currentPeriod = DriverDelinquentPeriod::where('driver_id', $driver->id)
+    DriverDelinquentPeriod::where('driver_id', $driver->id)
       ->whereNull('ended_at')
-      ->first();
+      ->update(['ended_at' => now()]);
 
-    if ($currentPeriod) {
-      $currentPeriod->ended_at = Carbon::now();
-      $currentPeriod->save();
-    }
+    $vendorId = $driver->vendor->vendor_id;
 
-    /**
-     * $this->autofleet->updateDriver($driver->autofleet_driver_id, [
-     *  "vendorId" => $originvalVendorId
-     * ])
-     */
+    //TODO: update driver vendor id
+    Log::info("Removing $driver->first_name ($driver->autofleet_driver_id) from delinquents");
   }
 
   function isValidCanadianPhoneNumber(string $phone): bool
@@ -193,6 +193,6 @@ class DriverService
     }
 
     Driver::where('autofleet_driver_id', $driver['autofleet_driver_id'])
-      ->update(['city_id' =>  trim($cityLabel)]);
+      ->update(['city_id' => trim($cityLabel)]);
   }
 }

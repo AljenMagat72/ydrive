@@ -38,7 +38,6 @@ class DriverDelinquentController extends Controller
       $this->driverService->removeFromDelinquents($driver);
     }
 
-    $driver->prevent_delinquency = true;
     $driver->save();
 
     return response()->json([

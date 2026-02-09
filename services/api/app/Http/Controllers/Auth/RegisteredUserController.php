@@ -13,6 +13,7 @@ use Illuminate\Validation\Rule;
 
 class RegisteredUserController extends Controller
 {
+
     /**
      * Create user
      * @param Request $request
@@ -24,9 +25,9 @@ class RegisteredUserController extends Controller
 
         $token = data_get($data, 'form.token');
 
-        $tokenExist = TokenRegistration::$where('token', $token)->first();
+        $tokenExists = RegistrationToken::where('token', $token)->first();
 
-        if (!$tokenExist) {
+        if (!$tokenExists) {
             return response()->json([
                 'success' => false,
                 'message' => 'Registration failed, please contact your developer.'

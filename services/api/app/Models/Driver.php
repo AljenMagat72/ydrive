@@ -11,8 +11,6 @@ use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
 
 /**
- * 
- *
  * @property int $id
  * @property string $autofleet_driver_id
  * @property string $first_name
@@ -37,6 +35,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property-read int|null $schedules_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read int|null $tokens_count
+ *
  * @method static Builder<static>|Driver newModelQuery()
  * @method static Builder<static>|Driver newQuery()
  * @method static Builder<static>|Driver query()
@@ -56,6 +55,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @method static Builder<static>|Driver wherePreventDelinquency($value)
  * @method static Builder<static>|Driver whereUpdatedAt($value)
  * @method static Builder<static>|Driver whereVendorId($value)
+ *
  * @mixin \Eloquent
  */
 class Driver extends User
@@ -65,26 +65,23 @@ class Driver extends User
   /**
    * @return \Illuminate\Support\Collection<int, object{driver: \App\Models\Driver, totalHours: float}>
    */
-  public static function InCompleteSchedules(): Collection
+  public static function IncompleteSchedules(string $cityId): Collection
   {
-    $hours = 20;
-
     $nextWeekStart = Carbon::now()->addWeek()->startOfWeek();
     $nextWeekEnd = (clone $nextWeekStart)->endOfWeek();
 
     return Driver::underHoursForRange($nextWeekStart, $nextWeekEnd)
-      ->get()
-      ->map(function ($driver) use ($hours, $nextWeekStart, $nextWeekEnd) {
-        $total = $driver->schedules->sum(
-          fn($s) => $s->hoursInRange($nextWeekStart, $nextWeekEnd)
-        );
+      ->where('is_active', true)
+      ->where('city_id', $cityId)
+      ->get();
+  }
 
-        return (object) [
-          'driver' => $driver,
-          'totalHours' => $total,
-        ];
-      })
-      ->filter(fn($item) => $item->totalHours < $hours);
+  public static function NotMeetingAcceptanceRate(string $cityId): Collection
+  {
+    return Driver::where('is_active', true)
+      ->where('city_id', $cityId)
+      ->belowAcceptanceRate()
+      ->get();
   }
 
   protected $fillable = [
@@ -110,15 +107,36 @@ class Driver extends User
     Carbon $rangeStart,
     Carbon $rangeEnd
   ) {
+    $defaultHours = config('autofleet.acceptance_rate_minimum');
+
     return $query
-      ->where('prevent_delinquency', false)
-      ->where('is_active', true)
+      ->whereRaw('COALESCE(minimum_scheduled_hours, ?) > (
+        SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (ends_at - starts_at)) / 3600), 0)
+        FROM driver_schedules
+        WHERE driver_schedules.driver_id = drivers.id
+        AND (
+          (starts_at BETWEEN ? AND ?)
+          OR (ends_at BETWEEN ? AND ?)
+        )
+      )', [
+        $defaultHours,
+        $rangeStart,
+        $rangeEnd,
+        $rangeStart,
+        $rangeEnd
+      ])
       ->with([
         'schedules' => function ($q) use ($rangeStart, $rangeEnd) {
           $q->whereBetween('starts_at', [$rangeStart, $rangeEnd])
             ->orWhereBetween('ends_at', [$rangeStart, $rangeEnd]);
         }
       ]);
+  }
+
+  public function scopeBelowAcceptanceRate(Builder $query)
+  {
+    $minAcceptanceRate = config('autofleet.acceptance_rate_minimum');
+    return $query->whereRaw('COALESCE(minimum_acceptance_rate, ?) > COALESCE(weekly_acceptance_rate, 0)', [$minAcceptanceRate]);
   }
 
   public function schedules()
@@ -135,5 +153,10 @@ class Driver extends User
   {
     return $this->hasOne(DriverDelinquentPeriod::class)
       ->whereNull('ended_at');
+  }
+
+  public function vendor()
+  {
+    return $this->belongsTo(VendorList::class, 'vendor_list_id');
   }
 }

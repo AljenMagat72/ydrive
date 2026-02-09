@@ -3,10 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Models\Driver;
-use App\Services\AutoFleetService;
 use App\Services\DriverService;
+use App\Jobs\ConfirmScheduledHours;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class MoveDrivers extends Command
 {
@@ -24,7 +24,7 @@ class MoveDrivers extends Command
    *
    * @var string
    */
-  protected $signature = 'app:move-drivers';
+  protected $signature = 'driver:move-drivers {city_id}';
 
   /**
    * The console command description.
@@ -38,23 +38,40 @@ class MoveDrivers extends Command
    */
   public function handle()
   {
+    $cityId = $this->argument('city_id');
+
     $previous = Driver::where('is_delinquent', true)
       ->where('is_active', true)
+      ->when($cityId, fn($q) => $q->where('city_id', $cityId))
       ->get();
-    $collection = Driver::InCompleteSchedules();
+
+    $incompleteSchedules = Driver::IncompleteSchedules($cityId);
+    $belowAcceptanceRate = Driver::NotMeetingAcceptanceRate($cityId);
+
+    $failingBoth = $incompleteSchedules->intersect($belowAcceptanceRate);
+
+    $onlyFailingHours = $incompleteSchedules->diff($belowAcceptanceRate);
 
     $previousById = $previous->keyBy('id');
-    $currentById = $collection->keyBy(fn($item) => $item->driver->id);
+    $failingBothById = $failingBoth->keyBy('id');
 
-    $addtions = $currentById->diffKeys($previousById);
-    $removals = $previousById->diffKeys($currentById);
+    $additions = $failingBothById->diffKeys($previousById);
 
-    foreach ($addtions as $item) {
-      $this->driverService->addToDelinquents($item->driver);
+    $removals = $previousById->diffKeys($failingBothById);
+
+    foreach ($additions as $driver) {
+      $this->driverService->addToDelinquents($driver);
     }
 
-    foreach ($removals as $item) {
-      $this->driverService->removeFromDelinquents($item);
+    foreach ($removals as $driver) {
+      $this->driverService->removeFromDelinquents($driver);
+      //TODO: send congrats message
+    }
+
+    foreach ($onlyFailingHours as $driver) {
+      ConfirmScheduledHours::dispatch($driver->id, $this->driverService)
+        ->delay(now()->addHours(9));
+      //TODO: move this to some descriptive value
     }
   }
 }

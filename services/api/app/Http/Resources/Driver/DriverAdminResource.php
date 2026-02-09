@@ -37,6 +37,7 @@ class DriverAdminResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'autofleetDriverId' => $this->autofleet_driver_id,
             'firstName' => $this->first_name,
             'lastName' => $this->last_name,
             'phoneNumber' => $this->phone_number,
@@ -49,6 +50,7 @@ class DriverAdminResource extends JsonResource
             'expiredOffers' => $this->expired_offers,
             'rejectedOffers' => $this->rejected_offers,
             'schedules' => $weekSchedule,
+            'isDelinquent' => $this->is_delinquent,
         ];
     }
 }
