@@ -2,7 +2,7 @@
   "name": "y-drive",
   "private": true,
   "scripts": {
-    "deploy": "git checkout main && git rebase dev && git push origin main --force-with-lease"
+    "deploy": "git checkout dev && git pull origin dev && git checkout main && git rebase dev && git push origin main --force-with-lease"
   },
   "engines": {
     "node": ">=20.0.0"
