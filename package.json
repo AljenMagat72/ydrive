@@ -2,11 +2,7 @@
   "name": "y-drive",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "deploy": "git checkout main && git rebase dev && git push origin main --force-with-lease"
   },
   "devDependencies": {
     "prettier": "^3.7.4",
