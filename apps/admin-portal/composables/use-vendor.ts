@@ -11,13 +11,14 @@ export const useVendor = () => {
     }
   }
 
-  async function update(id: number, city: string) {
+  async function update(id: number, city: string, driverId: string) {
     try {
       const res = await $fetch("/api/v1/driver/vendor/update", {
         method: "POST",
         body: {
           driver_id: id,
           vendor_id: city,
+          autofleet_driver_id: driverId,
         },
       });
 
@@ -29,13 +30,14 @@ export const useVendor = () => {
     }
   }
 
-  async function revert(id: number, city: string) {
+  async function revert(id: number, city: string, driverId: string) {
     try {
       const res = await $fetch("/api/v1/driver/vendor/revert", {
         method: "POST",
         body: {
           driver_id: id,
-          no_opps_id: city,
+          vendor_name: city,
+          autofleet_driver_id: driverId,
         },
       });
 

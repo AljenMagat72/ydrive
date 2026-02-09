@@ -65,7 +65,7 @@ const toggleMenu = (menu: string) => {
         </NuxtLink>
       </div>
 
-      <div v-if="openMenu === 'drivers'" class="flex flex-col">
+      <div v-if="openMenu === 'drivers'" class="flex flex-col hidden">
         <NuxtLink
           to="/driver/no-opps"
           class="flex items-center pl-15 py-2.5 cursor-pointer font-semibold text-sm text-lg leading-5 color-blue rounded hover:bg-ydrive-blue hover:text-white dark:text-white/80"
@@ -76,7 +76,7 @@ const toggleMenu = (menu: string) => {
 
       <NuxtLink
         to="/vendor/vendors"
-        class="flex items-center cursor-pointer px-4 py-2 gap-x-2 font-bold text-base md:text-lg leading-5 color-blue rounded hover:bg-ydrive-blue hover:text-white dark:text-white/80"
+        class="flex hidden items-center cursor-pointer px-4 py-2 gap-x-2 font-bold text-base md:text-lg leading-5 color-blue rounded hover:bg-ydrive-blue hover:text-white dark:text-white/80"
       >
         <HandshakeIcon />
         Vendors

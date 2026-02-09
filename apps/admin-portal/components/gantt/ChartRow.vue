@@ -62,9 +62,10 @@ function dateFormat(date: CalendarDateTime, isEnd = false) {
       <Tooltip>
         <TooltipTrigger
           ref="container"
-          class="w-full bg-foreground text-background p-2 rounded-md text-xs block select-none"
+          class="w-full bg-foreground text-background p-1 lg:p-2 rounded-md text-xs block select-none"
         >
-          {{ firstName }} {{ lastName }}
+          <span class="hidden lg:inline">{{ firstName }} {{ lastName }}</span>
+          <span class="lg:hidden">{{ firstName.charAt(0) }}. {{ lastName }}</span>
         </TooltipTrigger>
         <TooltipContent :side-offset="-10">
           <div class="space-y-1">

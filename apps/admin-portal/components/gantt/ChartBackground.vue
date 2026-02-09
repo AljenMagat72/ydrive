@@ -1,8 +1,19 @@
+<script setup lang="ts">
+const props = defineProps<{
+  isAdmin?: boolean;
+}>();
+</script>
+
 <template>
-  <div
-    class="absolute inset-0 h-full bg-striped"
-    style="grid-template-columns: repeat(24, 1fr);"
-  />
+  <div class="absolute inset-0 h-full flex">
+    <!-- Row numbers column background -->
+    <div class="w-8 bg-background border-r border-gray-200" />
+    <!-- Time slots background -->
+    <div
+      class="flex-1 bg-striped"
+      style="grid-template-columns: repeat(24, minmax(1.5rem, 1fr));"
+    />
+  </div>
 </template>
 
 <style lang="css" scoped>

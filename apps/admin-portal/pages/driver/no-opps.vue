@@ -70,9 +70,13 @@ const formatDate = (dateStr: string) => {
     .replace(",", "");
 };
 
-const revertVendor = async (id: number, city: string) => {
+const moveDriverToVendorList = async (
+  id: number,
+  city: string,
+  driverId: string,
+) => {
   try {
-    await vendor.revert(id, city);
+    await vendor.revert(id, city, driverId);
     if (drivers.value != null) {
       drivers.value = drivers.value.filter((driver: any) => driver.id != id);
     }
@@ -121,7 +125,13 @@ const revertVendor = async (id: number, city: string) => {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
-                    @click="revertVendor(driver.id, driver.city_id)"
+                    @click="
+                      moveDriverToVendorList(
+                        driver.id,
+                        driver.city_id,
+                        driver.autofleet_driver_id,
+                      )
+                    "
                     >Continue</AlertDialogAction
                   >
                 </AlertDialogFooter>

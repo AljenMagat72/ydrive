@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Download } from "lucide-vue-next";
 import { definePageMeta, useAuth, useFetch } from "#imports";
 
 import { computed, ref, type Ref } from "vue";
@@ -43,6 +44,8 @@ const props = defineProps<{ drivers: Array<any> }>();
 
 const date = ref<CalendarDate>(now) as Ref<CalendarDate>;
 const selectedCity = ref("All");
+const startTime = ref("");
+const endTime = ref("");
 const cities = ref([
   "Peterborough",
   "Sudbury",
@@ -53,6 +56,18 @@ const cities = ref([
   "Huntsville",
   "Grande Prairie",
 ]);
+
+// Generate time options for 30-minute intervals in 24-hour format
+const timeOptions = computed(() => {
+  const options = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      options.push(timeString);
+    }
+  }
+  return options;
+});
 
 const formattedDate = computed(() => date.value.toString());
 
@@ -66,7 +81,7 @@ const { data, status, refresh } = useFetch("/api/v1/driver/schedule/city", {
   retry: false,
 });
 
-// Keep endsAt 00:00 on the same day by moving it to 23:59 for chart calculations
+
 const schedules = computed(() => {
   if (!data.value) return new Map();
 
@@ -76,7 +91,6 @@ const schedules = computed(() => {
       let endsAt = parseDateTime(schedule.endsAt);
 
       if (endsAt.hour === 0 && endsAt.minute === 0) {
-        // Use the CalendarDateTime constructor / copy method
         endsAt = endsAt.add({ hours: 23, minutes: 59 });
       }
 
@@ -85,6 +99,29 @@ const schedules = computed(() => {
         startsAt,
         endsAt,
       };
+    })
+    .filter((schedule) => {
+      if (startTime.value) {
+        const timeParts = startTime.value.split(':').map(Number);
+        const startHour = timeParts[0] || 0;
+        const startMinute = timeParts[1] || 0;
+        if (schedule.startsAt.hour < startHour || 
+            (schedule.startsAt.hour === startHour && schedule.startsAt.minute < startMinute)) {
+          return false;
+        }
+      }
+      
+      if (endTime.value) {
+        const timeParts = endTime.value.split(':').map(Number);
+        const endHour = timeParts[0] || 0;
+        const endMinute = timeParts[1] || 0;
+        if (schedule.endsAt.hour > endHour || 
+            (schedule.endsAt.hour === endHour && schedule.endsAt.minute > endMinute)) {
+          return false;
+        }
+      }
+      
+      return true;
     })
     .reduce((acc, value) => {
       if (!acc.has(value.driver.id)) {
@@ -97,7 +134,51 @@ const schedules = computed(() => {
 
 const loading = computed(() => status.value === "pending");
 
-watch([date, selectedCity], () => {
+function exportDailySchedule() {
+  const headers = [
+    'Driver ID',
+    'First Name',
+    'Last Name',
+    'City',
+    'Start Time',
+    'End Time',
+    'Date'
+  ];
+
+  const rows: string[][] = [];
+  schedules.value.forEach((scheduleItems) => {
+    scheduleItems.forEach((schedule: any) => {
+      rows.push([
+        schedule.driver.id,
+        schedule.driver.firstName || '',
+        schedule.driver.lastName || '',
+        schedule.driver.city || 'N/A',
+        `${schedule.startsAt.hour.toString().padStart(2, '0')}:${schedule.startsAt.minute.toString().padStart(2, '0')}`,
+        `${schedule.endsAt.hour.toString().padStart(2, '0')}:${schedule.endsAt.minute.toString().padStart(2, '0')}`,
+        `${date.value.year}-${date.value.month.toString().padStart(2, '0')}-${date.value.day.toString().padStart(2, '0')}`
+      ]);
+    });
+  });
+
+  const csvContent = [
+    headers.join(','),
+    ...rows.map((row: string[]) => row.map((cell: string) => `"${cell}"`).join(','))
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', `schedule-${date.value.year}-${date.value.month.toString().padStart(2, '0')}-${date.value.day.toString().padStart(2, '0')}.csv`);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+  
+watch([date, selectedCity, startTime, endTime], () => {
   refresh();
 });
 </script>
@@ -105,19 +186,54 @@ watch([date, selectedCity], () => {
 <template>
   <div class="flex flex-col flex-1 gap-y-4 lg:overflow-hidden overflow-scroll">
     <ClientOnly>
-      <div class="flex gap-x-4 w-full">
-        <PopoverCalendar v-model="date" />
+      <div class="flex flex-col lg:flex-row lg:justify-between gap-4 w-full">
+        <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+          <PopoverCalendar v-model="date" />
 
-        <select
-          v-model="selectedCity"
-          class="lg:w-auto w-full capitalize no-underline rounded-lg px-4 py-2 text-sm bg-white dark:bg-[#262728] border dark:text-white/50"
-        >
-          <option value="All" class="">All Cities</option>
-          <option v-for="city in cities" :key="city" :value="city">
-            {{ city.replace("_", " ") }}
-          </option>
-        </select>
+          <select
+            v-model="selectedCity"
+            class="w-full sm:w-auto capitalize no-underline rounded-lg px-4 py-2 text-sm bg-white dark:bg-[#262728] border dark:text-white/50"
+          >
+            <option value="All" class="">All Cities</option>
+            <option v-for="city in cities" :key="city" :value="city">
+              {{ city.replace("_", " ") }}
+            </option>
+          </select>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <select
+              v-model="startTime"
+              class="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#262728] text-gray-900 dark:text-white"
+            >
+              <option value="">Start Time</option>
+              <option v-for="time in timeOptions" :key="time" :value="time">
+                {{ time }}
+              </option>
+            </select>
+            <span class="text-gray-500 dark:text-gray-400 whitespace-nowrap">to</span>
+            <select
+              v-model="endTime"
+              class="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#262728] text-gray-900 dark:text-white"
+            >
+              <option value="">End Time</option>
+              <option v-for="time in timeOptions" :key="time" :value="time">
+                {{ time }}
+              </option>
+            </select>
+          </div>
+
+          <button
+            @click="exportDailySchedule"
+            class="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors w-full sm:w-auto"
+            title="Download Daily Schedule"
+          >
+            <Download class="w-4 h-4" />
+          </button>
+        </div>
       </div>
+      
       <Chart
         :date="date"
         :city="selectedCity"

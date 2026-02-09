@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { CloudCog, Loader, Loader2, Wrench, X } from "lucide-vue-next";
+import {
+  Loader,
+  Wrench,
+  X,
+  Download,
+} from "lucide-vue-next";
 import { ref, computed, watch } from "vue";
 import Modal from "~/components/Modal.vue";
 import {
@@ -13,24 +18,22 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import Vendors from "~/pages/vendor/vendors.vue";
 const vendor = useVendor();
 
-// ---------------------------
-// Props & Emits
-// ---------------------------
 const props = defineProps<{ drivers: Array<any> }>();
 const emit = defineEmits<{
   (e: "select-driver", driver: any): void;
 }>();
 
-// ---------------------------
-// States
-// ---------------------------
 const selectedCity = ref("");
 const searchDriver = ref("");
 const selectedDriverId = ref(0);
 const showUpdateForm = ref(false);
+const activeFilter = ref(""); 
+const sortField = ref(""); 
+const sortOrder = ref("asc");
+const scheduleFilter = ref(""); 
+const acceptanceRange = ref({ min: 0, max: 100 }); 
 const cities = ref([
   "peterborough",
   "sudbury",
@@ -43,15 +46,12 @@ const cities = ref([
 ]);
 
 const currentPage = ref(1);
-const itemsPerPage = 10;
+const itemsPerPage = ref(10);
 const loading = ref(false);
 const showModal = ref(false);
 const addingToNoOpps = ref(false);
 const localDrivers = ref<any[]>([]);
 
-// ---------------------------
-// Computed
-// ---------------------------
 watch(
   () => props.drivers,
   (drivers) => {
@@ -59,6 +59,7 @@ watch(
 
     localDrivers.value = list.map((d) => ({
       id: d.id ?? 0,
+      autofleetDriverId: d.autofleetDriverId ?? 0,
       firstName: d.firstName ?? "",
       lastName: d.lastName ?? "",
       name: `${d.firstName ?? ""} ${d.lastName ?? ""}`,
@@ -72,34 +73,87 @@ watch(
       enabled: d.enabled ?? true,
       city: d.city ?? "",
       schedules: d.schedules,
+      isDelinquent: d.isDelinquent,
     }));
   },
   { immediate: true },
 );
 
-const filteredDrivers = computed(() =>
-  localDrivers.value.filter((d) => {
+const filteredDrivers = computed(() => {
+  let drivers = localDrivers.value.filter((d) => {
     const matchesCity = selectedCity.value
       ? d.city.toLowerCase() === selectedCity.value.toLowerCase()
       : true;
+
     const matchesSearch = d.name
       .toLowerCase()
       .includes(searchDriver.value.toLowerCase());
-    return matchesCity && matchesSearch;
-  }),
-);
+    
+    const matchesActive = activeFilter.value
+      ? activeFilter.value === "active"
+        ? !d.isDelinquent
+        : d.isDelinquent
+      : true;
+    
+    const matchesSchedule = scheduleFilter.value
+      ? scheduleFilter.value === "scheduled"
+        ? d.schedule
+        : !d.schedule
+      : true;
+    
+    const matchesAcceptanceRange = 
+      d.acceptance >= acceptanceRange.value.min && 
+      d.acceptance <= acceptanceRange.value.max;
+    
+    return matchesCity && matchesSearch && matchesActive && matchesSchedule && matchesAcceptanceRange;
+  });
+  
+   if (sortField.value) {
+    drivers.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortField.value) {
+        case "acceptance":
+          aValue = a.acceptance || 0;
+          bValue = b.acceptance || 0;
+          break;
+        case "rejected":
+          aValue = a.rejectedOffers || 0;
+          bValue = b.rejectedOffers || 0;
+          break;
+        case "ignored":
+          aValue = a.expiredOffers || 0;
+          bValue = b.expiredOffers || 0;
+          break;
+        case "schedule":
+          aValue = a.schedule ? 1 : 0;
+          bValue = b.schedule ? 1 : 0;
+          break;
+        default:
+          return 0;
+      }
+      
+      if (sortOrder.value === "asc") {
+        return aValue - bValue;
+      } else {
+        return bValue - aValue;
+      }
+    });
+  }
+  
+  return drivers;
+});
 
 const totalPages = computed(() =>
-  Math.ceil(filteredDrivers.value.length / itemsPerPage),
+  Math.ceil(filteredDrivers.value.length / itemsPerPage.value),
 );
 
 const paginatedDrivers = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
+  const start = (currentPage.value - 1) * 20;
+  const end = start + itemsPerPage.value;
   return filteredDrivers.value.slice(start, end);
 });
 
-// visible pages for pagination
 const visiblePages = computed(() => {
   const total = totalPages.value;
   const current = currentPage.value;
@@ -124,19 +178,13 @@ const visiblePages = computed(() => {
   return pages;
 });
 
-// ---------------------------
-// Methods
-// ---------------------------
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
 };
 
-// ---------------------------
-// Watchers
-// ---------------------------
-// Reset page to 1 when filters change
-watch([selectedCity, searchDriver], () => {
+
+watch([selectedCity, searchDriver, activeFilter, scheduleFilter, acceptanceRange, sortField, sortOrder], () => {
   currentPage.value = 1;
 });
 
@@ -182,16 +230,24 @@ const handleShowUpdateModal = (driverData: any) => {
   showModal.value = true;
 };
 
-const handleChangeVendorToNoOpps = async (id: number, city: string) => {
+const moveDriverVendor = async (driver: any) => {
+  const { id, city, autofleetDriverId, isDelinquent, enabled } = driver;
+
   try {
     addingToNoOpps.value = true;
     selectedDriverId.value = id;
 
-    const res = await vendor.update(id, city);
+    if (!isDelinquent) {
+      await vendor.update(id, city, autofleetDriverId);
 
-    if (res.success) {
-      localDrivers.value = localDrivers.value.filter(
-        (driver) => driver.id !== id,
+      localDrivers.value = localDrivers.value.map((d) =>
+        d.id === id ? { ...d, isDelinquent: true } : d,
+      );
+    } else {
+      await vendor.revert(id, city, autofleetDriverId);
+
+      localDrivers.value = localDrivers.value.map((d) =>
+        d.id === id ? { ...d, isDelinquent: false } : d,
       );
     }
   } catch (error) {
@@ -201,16 +257,109 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
     selectedDriverId.value = 0;
   }
 };
+
+const perPageOptions = [
+  { label: "Show 10", value: 10 },
+  { label: "Show 50", value: 50 },
+  { label: "Show 100", value: 100 },
+  { label: "Show All", value: localDrivers.value.length },
+];
+
+function updateItemsPerPage(event: Event) {
+  const target = event.target as HTMLSelectElement;
+  itemsPerPage.value = Number(target.value);
+}
+
+function handleSort(field: string) {
+  if (sortField.value === field) {
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  } else {
+    sortField.value = field;
+    sortOrder.value = "asc";
+  }
+}
+
+function handleScheduleFilter() {
+  if (scheduleFilter.value === "") {
+    scheduleFilter.value = "scheduled";
+  } else if (scheduleFilter.value === "scheduled") {
+    scheduleFilter.value = "unscheduled";
+  } else {
+    scheduleFilter.value = "";
+  }
+}
+
+function getSortIcon(field: string) {
+  if (sortField.value !== field) return "↕";
+  return sortOrder.value === "asc" ? "↑" : "↓";
+}
+
+function getScheduleFilterIcon() {
+  if (scheduleFilter.value === "") return "↕";
+  return scheduleFilter.value === "scheduled" ? "✔" : "✖";
+}
+
+function exportToExcel() {
+  // Create headers for Excel export
+  const headers = [
+    'Driver ID',
+    'First Name', 
+    'Last Name',
+    'Full Name',
+    'City',
+    'Scheduled Today',
+    'Acceptance Rate (%)',
+    'Acceptance Target (%)',
+    'Rejected Offers',
+    'Ignored Offers',
+    'Minimum Scheduled Hours',
+    'Status',
+    'Is Delinquent'
+  ];
+  
+  // Transform driver data for Excel
+  const rows = filteredDrivers.value.map(driver => [
+    driver.id,
+    driver.firstName || '',
+    driver.lastName || '',
+    driver.name || '',
+    driver.city || 'N/A',
+    driver.schedule ? 'Yes' : 'No',
+    driver.acceptance || 0,
+    driver.acceptanceNeeded || 0,
+    driver.rejectedOffers || 0,
+    driver.expiredOffers || 0,
+    driver.scheduledHours || 0,
+    driver.isDelinquent ? 'Inactive' : 'Active',
+    driver.isDelinquent ? 'Yes' : 'No'
+  ]);
+  
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+  ].join('\n');
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', `drivers-export-${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 </script>
 
 <template>
   <div
     class="flex flex-col w-full relative rounded-xl lg:p-6 md:p-3 bg-white lg:shadow-lg md:shadow lg:border md:border mt-6 md:mt-3 z-10 dark:bg-[#262728] lg:overflow-hidden overflow-x-scroll"
   >
-    <!-- Dropdown + Search -->
-    <div class="flex items-center gap-4.5 lg:space-y-[1px] p-2">
-      <!-- City dropdown -->
-      <div class="relative lg:w-1/3 w-full">
+    <div class="flex items-center justify-between gap-4.5 lg:space-y-[1px] p-2">
+
+      <div class="relative lg:w-1/4 w-full">
         <select
           v-model="selectedCity"
           class="w-full capitalize no-underline background-light-blue appearance-none rounded-lg px-4 py-2 text-sm bg-white dark:bg-[#262728] border dark:text-white/50"
@@ -220,7 +369,7 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
             {{ city.replace("_", " ") }}
           </option>
         </select>
-        <!-- Arrow -->
+
         <svg
           class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
           xmlns="http://www.w3.org/2000/svg"
@@ -233,8 +382,48 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
         </svg>
       </div>
 
-      <!-- Driver Search -->
-      <div class="relative lg:w-2/3 w-full dark:bg-[#262728]">
+      <div class="relative lg:w-1/4 w-full">
+        <select
+          v-model="activeFilter"
+          class="w-full capitalize no-underline background-light-blue appearance-none rounded-lg px-4 py-2 text-sm bg-white dark:bg-[#262728] border dark:text-white/50"
+        >
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+
+        <svg
+          class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </div>
+
+      <div class="relative lg:w-1/4 w-full flex items-center gap-2">
+        <input
+          type="number"
+          v-model.number="acceptanceRange.min"
+          placeholder="Min %"
+          min="0"
+          max="100"
+          class="w-1/2 px-2 py-2 text-sm background-light-blue bg-white dark:bg-[#262728] border rounded-lg dark:text-white/50"
+        />
+        <input
+          type="number"
+          v-model.number="acceptanceRange.max"
+          placeholder="Max %"
+          min="0"
+          max="100"
+          class="w-1/2 px-2 py-2 text-sm background-light-blue bg-white dark:bg-[#262728] border rounded-lg dark:text-white/50"
+        />
+      </div>
+
+      <div class="relative lg:w-1/4 w-full dark:bg-[#262728]">
         <svg
           class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none outline-none"
           xmlns="http://www.w3.org/2000/svg"
@@ -256,6 +445,16 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
           class="w-full background-light-blue rounded-lg px-4 py-2 pl-8 text-sm bg-white border dark:bg-[#262728]"
         />
       </div>
+
+      <div class="flex items-center">
+        <button
+          @click="exportToExcel"
+          class="flex items-center gap-2 px-4 py-2.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+          title="Export to Excel"
+        >
+          <Download class="w-4 h-4 dark:text-white/50" />
+        </button>
+      </div>
     </div>
 
     <div class="-top-8 left-6 p-4 rounded z-20 mt-3">
@@ -267,14 +466,30 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
             >
               Driver
             </th>
-            <th class="px-2 py-1 text-center text-xs md:text-sm">Schedule</th>
-            <th
-              class="px-2 py-1 text-center text-xs md:text-sm whitespace-nowrap"
+            <th 
+              @click="handleScheduleFilter"
+              class="px-2 py-1 text-center text-xs md:text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              Acceptance %
+              Schedule {{ getScheduleFilterIcon() }}
             </th>
-            <th class="px-2 py-1 text-center text-xs md:text-sm">Rejected</th>
-            <th class="px-2 py-1 text-center text-xs md:text-sm">Ignored</th>
+            <th
+              @click="handleSort('acceptance')"
+              class="px-2 py-1 text-center text-xs md:text-sm whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Acceptance % {{ getSortIcon('acceptance') }}
+            </th>
+            <th 
+              @click="handleSort('rejected')"
+              class="px-2 py-1 text-center text-xs md:text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Rejected {{ getSortIcon('rejected') }}
+            </th>
+            <th 
+              @click="handleSort('ignored')"
+              class="px-2 py-1 text-center text-xs md:text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Ignored {{ getSortIcon('ignored') }}
+            </th>
           </tr>
         </thead>
 
@@ -288,7 +503,6 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
             <td
               class="py-3 text-xs md:text-sm font-medium w-full max-w-[280px] flex gap-2 items-start group relative"
             >
-              <!-- Desktop edit -->
               <Wrench
                 :size="18"
                 color="#0078d4"
@@ -296,7 +510,6 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
                 @click.stop="handleShowUpdateForm(driver)"
               />
 
-              <!-- Mobile edit -->
               <Wrench
                 :size="18"
                 color="#0078d4"
@@ -311,7 +524,6 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
                 {{ driver.name }}
               </span>
 
-              <!-- Update form (unchanged logic, fixed positioning) -->
               <div
                 v-if="showUpdateForm && selectedDriverId === driver.id"
                 @click.stop
@@ -394,10 +606,16 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
 
                   <div
                     v-else
-                    class="w-10 h-5 mx-auto flex items-center rounded-full transition-colors duration-300 cursor-pointer background-blue"
+                    class="w-10 h-5 mx-auto flex items-center rounded-full transition-colors duration-300 cursor-pointer"
+                    :class="
+                      driver.isDelinquent ? 'bg-gray-300' : 'background-blue'
+                    "
                   >
                     <div
-                      class="w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-300 translate-x-5"
+                      class="w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-300"
+                      :class="
+                        driver.isDelinquent ? 'translate-x-1' : 'translate-x-5'
+                      "
                     ></div>
                   </div>
                 </AlertDialogTrigger>
@@ -405,16 +623,16 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure ?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Opportunity board will be hidden to this driver and he
-                      will be added to NO OPPS vendors lists.
+                      {{
+                        driver.isDelinquent
+                          ? "This driver will be remove from it's NO OPPS vendor and OPPS board will be visible to his end."
+                          : "Opportunity board will be hidden to this driver and he will be added to NO OPPS vendors lists."
+                      }}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      @click="
-                        handleChangeVendorToNoOpps(driver.id, driver.city)
-                      "
+                    <AlertDialogAction @click="moveDriverVendor(driver)"
                       >Continue</AlertDialogAction
                     >
                   </AlertDialogFooter>
@@ -422,7 +640,6 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
               </AlertDialog>
             </td>
 
-            <!-- Mobile update in mobile view-->
             <Modal
               v-model:show="showModal"
               v-if="selectedDriverId === driver.id"
@@ -472,49 +689,77 @@ const handleChangeVendorToNoOpps = async (id: number, city: string) => {
                 </div>
               </div>
             </Modal>
-            <!-- End Modal update on mobile view-->
           </tr>
         </tbody>
       </table>
-      <!-- pagination -->
-      <div
-        v-if="filteredDrivers.length > itemsPerPage"
-        class="flex justify-center items-center space-x-2 lg:mt-5 mt-10 z-10"
-      >
-        <!-- Prev button -->
-        <button
-          class="px-3 py-1 rounded border disabled:opacity-50"
-          :class="currentPage > 1 ? 'color-blue hover:text-blue-600' : ''"
-          :disabled="currentPage === 1"
-          @click="goToPage(currentPage - 1)"
-        >
-          &lt;
-        </button>
 
-        <!-- Page buttons (dynamic window) -->
-        <button
-          v-for="page in visiblePages"
-          :key="page"
-          class="px-3 py-1 rounded border hover:bg-ydrive-blue hover:text-white transition-colors"
-          :class="
-            currentPage === page ? 'bg-[#0078d4] text-white' : 'text-blue-500'
-          "
-          @click="goToPage(page)"
-        >
-          {{ page }}
-        </button>
+      <div class="flex justify-between place-items-center">
+        <div class="flex gap-2 mt-5">
+          <div class="relative flex items-center">
+           <select
+              v-model="itemsPerPage"
+              @change="updateItemsPerPage"
+              class="w-auto capitalize no-underline background-light-blue appearance-none rounded-lg px-4 py-2 text-sm bg-white dark:bg-[#262728] border dark:text-white/50"
+            >
+              <option
+                v-for="option in perPageOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
 
-        <!-- Next button -->
-        <button
-          class="px-3 py-1 text-lg rounded border disabled:opacity-50 disabled:cursor-not-allowed"
-          :class="
-            currentPage < totalPages ? 'color-blue hover:hvr-color-blue' : ''
-          "
-          :disabled="currentPage === totalPages"
-          @click="goToPage(currentPage + 1)"
+            <svg
+              class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </div>
+        </div>
+
+        <div
+          v-if="filteredDrivers.length > itemsPerPage"
+          class="flex justify-center items-center space-x-2 lg:mt-5 mt-10 z-10"
         >
-          &gt;
-        </button>
+          <button
+            class="px-3 py-1 rounded border disabled:opacity-50"
+            :class="currentPage > 1 ? 'color-blue hover:text-blue-600' : ''"
+            :disabled="currentPage === 1"
+            @click="goToPage(currentPage - 1)"
+          >
+            &lt;
+          </button>
+
+          <button
+            v-for="page in visiblePages"
+            :key="page"
+            class="px-3 py-1 rounded border hover:bg-ydrive-blue hover:text-white transition-colors"
+            :class="
+              currentPage === page ? 'bg-[#0078d4] text-white' : 'text-blue-500'
+            "
+            @click="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+
+          <!-- Next button -->
+          <button
+            class="px-3 py-1 text-lg rounded border disabled:opacity-50 disabled:cursor-not-allowed"
+            :class="
+              currentPage < totalPages ? 'color-blue hover:hvr-color-blue' : ''
+            "
+            :disabled="currentPage === totalPages"
+            @click="goToPage(currentPage + 1)"
+          >
+            &gt;
+          </button>
+        </div>
       </div>
     </div>
   </div>

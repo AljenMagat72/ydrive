@@ -41,8 +41,6 @@ onMounted(async () => {
     vendors.value = null;
   }
 
-  console.log(vendors);
-
   loading.value = false;
 });
 </script>
