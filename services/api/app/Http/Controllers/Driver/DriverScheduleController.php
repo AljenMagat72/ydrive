@@ -142,7 +142,7 @@ class DriverScheduleController extends Controller
             ->orWhereBetween('ends_at', [$startOfWeek, $endOfWeek])
             ->orWhere(function ($sub) use ($startOfWeek, $endOfWeek) {
               $sub->where('starts_at', '<=', $startOfWeek)
-                ->where('ends_at', '>=', $endOfWeek);
+                ->where('ends_at', '>', $endOfWeek);
             });
         });
       },
@@ -152,7 +152,7 @@ class DriverScheduleController extends Controller
             ->orWhereBetween('ends_at', [$startOfNextWeek, $endOfNextWeek])
             ->orWhere(function ($sub) use ($startOfNextWeek, $endOfNextWeek) {
               $sub->where('starts_at', '<=', $startOfNextWeek)
-                ->where('ends_at', '>=', $endOfNextWeek);
+                ->where('ends_at', '>', $endOfNextWeek);
             });
         });
       },
