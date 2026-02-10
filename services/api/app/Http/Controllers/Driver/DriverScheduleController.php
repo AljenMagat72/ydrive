@@ -129,8 +129,8 @@ class DriverScheduleController extends Controller
 
   public function all(\Illuminate\Http\Request $request): JsonResponse
   {
-    $startOfWeek = Carbon::now()->startOfWeek(Carbon::SUNDAY);
-    $endOfWeek = Carbon::now()->endOfWeek(Carbon::SATURDAY);
+    $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+    $endOfWeek = Carbon::now()->endOfWeek(Carbon::SUNDAY);
 
     $startOfNextWeek = $startOfWeek->copy()->addWeek();
     $endOfNextWeek = $endOfWeek->copy()->addWeek();
