@@ -25,7 +25,8 @@ class DriverScheduleController extends Controller
   public function __construct(
     protected DriverScheduleService $driverScheduleService,
     protected DriverService $driverService,
-  ) {}
+  ) {
+  }
   /**
    * Create a schedule.
    */
@@ -137,24 +138,12 @@ class DriverScheduleController extends Controller
 
     $drivers = Driver::withExists([
       'schedules as has_current_schedule' => function ($query) use ($startOfWeek, $endOfWeek) {
-        $query->where(function ($q) use ($startOfWeek, $endOfWeek) {
-          $q->whereBetween('starts_at', [$startOfWeek, $endOfWeek])
-            ->orWhereBetween('ends_at', [$startOfWeek, $endOfWeek])
-            ->orWhere(function ($sub) use ($startOfWeek, $endOfWeek) {
-              $sub->where('starts_at', '<=', $startOfWeek)
-                ->where('ends_at', '>', $endOfWeek);
-            });
-        });
+        $query->where('starts_at', '<', $endOfWeek)
+          ->where('ends_at', '>', $startOfWeek);
       },
       'schedules as has_next_schedule' => function ($query) use ($startOfNextWeek, $endOfNextWeek) {
-        $query->where(function ($q) use ($startOfNextWeek, $endOfNextWeek) {
-          $q->whereBetween('starts_at', [$startOfNextWeek, $endOfNextWeek])
-            ->orWhereBetween('ends_at', [$startOfNextWeek, $endOfNextWeek])
-            ->orWhere(function ($sub) use ($startOfNextWeek, $endOfNextWeek) {
-              $sub->where('starts_at', '<=', $startOfNextWeek)
-                ->where('ends_at', '>', $endOfNextWeek);
-            });
-        });
+        $query->where('starts_at', '<', $endOfNextWeek)
+          ->where('ends_at', '>', $startOfNextWeek);
       },
     ])
       ->get();
@@ -184,7 +173,7 @@ class DriverScheduleController extends Controller
   {
     $schedule = \App\Models\DriverSchedule::find($id);
 
-    if (! $schedule) {
+    if (!$schedule) {
       return response()->json(['message' => 'Schedule not found'], 404);
     }
 
