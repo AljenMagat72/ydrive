@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Download } from "lucide-vue-next";
 import { definePageMeta, useAuth, useFetch } from "#imports";
+import * as XLSX from 'xlsx';
 
 import { computed, ref, type Ref } from "vue";
 import {
@@ -18,6 +19,7 @@ type Driver = {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
+  cityId: string;
 };
 
 type Schedule = {
@@ -101,6 +103,9 @@ const schedules = computed(() => {
       };
     })
     .filter((schedule) => {
+      const hasValidCityId = schedule.driver.cityId && schedule.driver.cityId !== null && schedule.driver.cityId !== '';
+      if (!hasValidCityId) return false;
+      
       if (startTime.value) {
         const timeParts = startTime.value.split(':').map(Number);
         const startHour = timeParts[0] || 0;
@@ -152,7 +157,7 @@ function exportDailySchedule() {
         schedule.driver.id,
         schedule.driver.firstName || '',
         schedule.driver.lastName || '',
-        schedule.driver.city || 'N/A',
+        schedule.driver.cityId || 'N/A',
         `${schedule.startsAt.hour.toString().padStart(2, '0')}:${schedule.startsAt.minute.toString().padStart(2, '0')}`,
         `${schedule.endsAt.hour.toString().padStart(2, '0')}:${schedule.endsAt.minute.toString().padStart(2, '0')}`,
         `${date.value.year}-${date.value.month.toString().padStart(2, '0')}-${date.value.day.toString().padStart(2, '0')}`
@@ -160,17 +165,22 @@ function exportDailySchedule() {
     });
   });
 
-  const csvContent = [
-    headers.join(','),
-    ...rows.map((row: string[]) => row.map((cell: string) => `"${cell}"`).join(','))
-  ].join('\n');
+  const wsData = [headers, ...rows];
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb, ws, "Schedule");
+
+  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+  const blob = new Blob([excelBuffer], { 
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+  });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
 
   link.setAttribute('href', url);
-  link.setAttribute('download', `schedule-${date.value.year}-${date.value.month.toString().padStart(2, '0')}-${date.value.day.toString().padStart(2, '0')}.csv`);
+  link.setAttribute('download', `schedule-${date.value.year}-${date.value.month.toString().padStart(2, '0')}-${date.value.day.toString().padStart(2, '0')}.xlsx`);
   link.style.visibility = 'hidden';
 
   document.body.appendChild(link);

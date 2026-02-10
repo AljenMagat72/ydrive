@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { ref, computed, watch } from "vue";
+import { useFetch } from "#imports";
 import {
   Loader,
   Wrench,
   X,
   Download,
 } from "lucide-vue-next";
-import { ref, computed, watch } from "vue";
+import * as XLSX from 'xlsx';
 import Modal from "~/components/Modal.vue";
 import {
   AlertDialog,
@@ -81,6 +83,9 @@ watch(
 
 const filteredDrivers = computed(() => {
   let drivers = localDrivers.value.filter((d) => {
+
+    const hasValidCity = d.city && d.city !== null && d.city !== '';
+    
     const matchesCity = selectedCity.value
       ? d.city.toLowerCase() === selectedCity.value.toLowerCase()
       : true;
@@ -105,7 +110,7 @@ const filteredDrivers = computed(() => {
       d.acceptance >= acceptanceRange.value.min && 
       d.acceptance <= acceptanceRange.value.max;
     
-    return matchesCity && matchesSearch && matchesActive && matchesSchedule && matchesAcceptanceRange;
+    return hasValidCity && matchesCity && matchesSearch && matchesActive && matchesSchedule && matchesAcceptanceRange;
   });
   
    if (sortField.value) {
@@ -300,10 +305,9 @@ function getScheduleFilterIcon() {
 }
 
 function exportToExcel() {
-  // Create headers for Excel export
   const headers = [
     'Driver ID',
-    'First Name', 
+    'First Name',
     'Last Name',
     'Full Name',
     'City',
@@ -316,8 +320,7 @@ function exportToExcel() {
     'Status',
     'Is Delinquent'
   ];
-  
-  // Transform driver data for Excel
+
   const rows = filteredDrivers.value.map(driver => [
     driver.id,
     driver.firstName || '',
@@ -333,24 +336,30 @@ function exportToExcel() {
     driver.isDelinquent ? 'Inactive' : 'Active',
     driver.isDelinquent ? 'Yes' : 'No'
   ]);
-  
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-  ].join('\n');
-  
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+  const wsData = [headers, ...rows];
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb, ws, "Drivers");
+
+  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+  const blob = new Blob([excelBuffer], { 
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+  });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute('href', url);
-  link.setAttribute('download', `drivers-export-${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute('download', `drivers-export-${new Date().toISOString().split('T')[0]}.xlsx`);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 }
+
 </script>
 
 <template>

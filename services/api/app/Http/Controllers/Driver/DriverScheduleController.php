@@ -157,7 +157,6 @@ class DriverScheduleController extends Controller
         });
       },
     ])
-      ->where('city_id', 'NOT LIKE', '%NO OPPS%')
       ->get();
 
     return response()->json([

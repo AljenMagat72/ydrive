@@ -28,7 +28,8 @@
     "shadcn-vue": "^2.4.1",
     "tailwind-merge": "^3.4.0",
     "vue": "^3.5.25",
-    "vue-router": "^4.6.3"
+    "vue-router": "^4.6.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

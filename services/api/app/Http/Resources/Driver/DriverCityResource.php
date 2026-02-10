@@ -19,6 +19,7 @@ class DriverCityResource extends JsonResource
       'firstName' => $this->first_name,
       'lastName' => $this->last_name,
       'phoneNumber' => $this->phone_number,
+      'cityId' => $this->city_id,
     ];
   }
 }
