@@ -239,7 +239,7 @@ watch([date, selectedCity, startTime, endTime], () => {
             class="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors w-full sm:w-auto"
             title="Download Daily Schedule"
           >
-            <Download class="w-4 h-4" />
+            <Download class="w-4 h-4" /> Export
           </button>
         </div>
       </div>

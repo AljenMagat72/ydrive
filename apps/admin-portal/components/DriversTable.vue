@@ -31,6 +31,7 @@ const selectedCity = ref("");
 const searchDriver = ref("");
 const selectedDriverId = ref(0);
 const showUpdateForm = ref(false);
+const selectedDriver = ref<any>(null); 
 const activeFilter = ref(""); 
 const sortField = ref(""); 
 const sortOrder = ref("asc");
@@ -203,9 +204,19 @@ const closeUpdateForm = () => {
   showUpdateForm.value = false;
 };
 
-const handleShowUpdateForm = (driverData: any) => {
+const handleShowUpdateForm = (driverData: any, event: any) => {
   showUpdateForm.value = true;
   selectedDriverId.value = driverData.id;
+  
+  // Store the click position for the form
+  const rect = event.currentTarget.getBoundingClientRect();
+  selectedDriver.value = {
+    ...driverData,
+    position: {
+      top: rect.top - 230,
+      left: rect.left
+    }
+  };
 };
 
 async function submitDriverUpdate(driver: any) {
@@ -366,9 +377,9 @@ function exportToExcel() {
   <div
     class="flex flex-col w-full relative rounded-xl lg:p-6 md:p-3 bg-white lg:shadow-lg md:shadow lg:border md:border mt-6 md:mt-3 z-10 dark:bg-[#262728] lg:overflow-hidden overflow-x-scroll"
   >
-    <div class="flex items-center justify-between gap-4.5 lg:space-y-[1px] p-2">
+    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-4.5 lg:space-y-[1px] p-2">
 
-      <div class="relative lg:w-1/4 w-full">
+      <div class="relative w-full lg:w-1/4">
         <select
           v-model="selectedCity"
           class="w-full capitalize no-underline background-light-blue appearance-none rounded-lg px-4 py-2 text-sm bg-white dark:bg-[#262728] border dark:text-white/50"
@@ -391,7 +402,7 @@ function exportToExcel() {
         </svg>
       </div>
 
-      <div class="relative lg:w-1/4 w-full">
+      <div class="relative w-full lg:w-1/4">
         <select
           v-model="activeFilter"
           class="w-full capitalize no-underline background-light-blue appearance-none rounded-lg px-4 py-2 text-sm bg-white dark:bg-[#262728] border dark:text-white/50"
@@ -413,7 +424,7 @@ function exportToExcel() {
         </svg>
       </div>
 
-      <div class="relative lg:w-1/4 w-full flex items-center gap-2">
+      <div class="relative w-full lg:w-1/4 flex items-center gap-2">
         <input
           type="number"
           v-model.number="acceptanceRange.min"
@@ -432,7 +443,7 @@ function exportToExcel() {
         />
       </div>
 
-      <div class="relative lg:w-1/4 w-full dark:bg-[#262728]">
+      <div class="relative w-full lg:w-1/4 dark:bg-[#262728]">
         <svg
           class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none outline-none"
           xmlns="http://www.w3.org/2000/svg"
@@ -455,13 +466,14 @@ function exportToExcel() {
         />
       </div>
 
-      <div class="flex items-center">
+      <div class="flex items-center w-full lg:w-auto">
         <button
           @click="exportToExcel"
-          class="flex items-center gap-2 px-4 py-2.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+          class="flex items-center justify-center gap-2 px-4 py-2.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors w-full lg:w-auto"
           title="Export to Excel"
         >
           <Download class="w-4 h-4 dark:text-white/50" />
+          <span class="hidden lg:inline">Export</span>
         </button>
       </div>
     </div>
@@ -510,13 +522,14 @@ function exportToExcel() {
             @click="$emit('select-driver', driver)"
           >
             <td
+              ref="driverCell"
               class="py-3 text-xs md:text-sm font-medium w-full max-w-[280px] flex gap-2 items-start group relative"
             >
               <Wrench
                 :size="18"
                 color="#0078d4"
                 class="hidden lg:block flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                @click.stop="handleShowUpdateForm(driver)"
+                @click.stop="handleShowUpdateForm(driver, $event)"
               />
 
               <Wrench
@@ -527,16 +540,20 @@ function exportToExcel() {
               />
 
               <span
-                class="dark:text-white/70 block truncate max-w-full"
+                class="dark:text-white/70 block truncate max-w-full relative z-10"
                 :title="driver.name"
               >
                 {{ driver.name }}
               </span>
 
               <div
-                v-if="showUpdateForm && selectedDriverId === driver.id"
+                v-if="showUpdateForm && selectedDriverId === driver.id && selectedDriver"
                 @click.stop
-                class="absolute top-full left-0 mt-2 z-50 w-[260px] bg-white dark:bg-[#262728] p-4 shadow-lg border rounded-lg space-y-3 text-start"
+                class="fixed z-[9999] w-[260px] bg-white dark:bg-[#262728] p-4 shadow-lg border rounded-lg space-y-3 text-start"
+                :style="{
+                  top: selectedDriver.position.top + 'px',
+                  left: selectedDriver.position.left + 'px'
+                }"
               >
                 <label class="text-gray-500">Hours needed</label>
                 <input
