@@ -1,35 +1,15 @@
-# Production Dockerfile
-FROM node:lts-alpine AS base
+# Build stage
+FROM node:20-alpine AS build
 WORKDIR /app
-
-# Create a non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nuxtjs -u 1001
-
-# Copy package files
-COPY package*.json ./
-
-# Install production dependencies
-RUN npm ci --only=production && npm cache clean --force
-
-# Copy source code
 COPY . .
-
-# Pass environment variables as build arguments
-ARG CHART_KEY
-ENV CHART_KEY=$CHART_KEY
-
-# Build the Nuxt app
+RUN npm install
 RUN npm run build
 
-# Switch to non-root user
-USER nuxtjs
+# Run stage
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=build /app/.output ./.output
 
-# Expose port
 EXPOSE 3000
-
-# Set environment to production
-ENV NODE_ENV=production
-
-# Start the application
+ENV PORT=3000
 CMD ["node", ".output/server/index.mjs"]
