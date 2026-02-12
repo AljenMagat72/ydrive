@@ -219,9 +219,9 @@ return [
     | application. You can add your own commands to merge section.
     |
     */
-    'commands' => ConsoleServiceProvider::defaultCommands()
+    'commands' => \Nwidart\Modules\Providers\ConsoleServiceProvider::defaultCommands()
         ->merge([
-            // New commands go here
+            // custom commands here
         ])->toArray(),
 
     /*

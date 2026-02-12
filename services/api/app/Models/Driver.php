@@ -100,6 +100,7 @@ class Driver extends User
     'acceptance_rate_needed',
     'rejected_offers',
     'expired_offers',
+    'zoho_id',
   ];
 
   public function scopeUnderHoursForRange(

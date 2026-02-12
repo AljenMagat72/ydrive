@@ -10,6 +10,7 @@ type User = {
   minimumScheduledHours: string;
   acceptanceRate: string;
   acceptanceRateNeeded: string;
+  zoho_id: string;
 };
 
 type LoginResponse = {
