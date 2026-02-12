@@ -1,3 +1,14 @@
 packages:
+  - apps/*
+  - services/*
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@sentry/cli'
+  - esbuild
+  - puppeteer
+  - sharp
+  - unrs-resolver
+  - vue-demi
   - 'apps/*'
   - 'services/*'
