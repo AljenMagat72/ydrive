@@ -1,9 +1,10 @@
 <?php
 
 return [
-    'name' => 'Zoho',
     'client_id'     => env('ZOHO_CLIENT_ID'),
     'client_secret' => env('ZOHO_CLIENT_SECRET'),
+    'region'        => env('ZOHO_REGION', 'US'),
+    'currentUserEmail' => env('ZOHO_CURRENT_USER_EMAIL'),
     'redirect_uri'  => env('ZOHO_REDIRECT_URI'),
-    'api_domain'    => 'https://www.zohoapis.com/crm/v2',
+    'token_path'    => storage_path('app/zoho/'),
 ];

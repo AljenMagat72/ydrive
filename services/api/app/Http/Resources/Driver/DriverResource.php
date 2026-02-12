@@ -24,6 +24,7 @@ class DriverResource extends JsonResource
       'minimumScheduledHours' => $this->minimum_scheduled_hours,
       'acceptanceRate' => $this->acceptance_rate,
       'acceptanceRateNeeded' => $this->acceptance_rate_needed,
+      'zoho_id' => $this->zoho_id,
     ];
   }
 }

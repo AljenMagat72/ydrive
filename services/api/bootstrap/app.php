@@ -35,9 +35,16 @@ return Application::configure(basePath: dirname(__DIR__))
       'api/webhook/driver-created'
     ]);
   })
+
   ->withExceptions(function (Exceptions $exceptions) {
-    //
+    $exceptions->shouldRenderJsonWhen(function ($request, $e) {
+        if ($request->is('api/*')) {
+            return true;
+        }
+        return $request->expectsJson();
+    });
   })
+  
   ->withSchedule(function (Schedule $schedule) {
     $cities = config('autofleet.cities');
 

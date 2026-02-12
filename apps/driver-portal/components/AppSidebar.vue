@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Calendar, CalendarClock, CalendarPlus, ChevronRight, LogOut } from 'lucide-vue-next';
+import { Calendar, CalendarClock, CalendarPlus, ChevronRight, LogOut, User } from 'lucide-vue-next';
 import { useAuth } from '#imports';
 import {
   Sidebar,
@@ -91,11 +91,14 @@ function closeSideBar() {
                 </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
-            <!--<SidebarMenuItem>
-              <SidebarMenuButton>
-                <DollarSign /> Pay out
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <NuxtLink to="/personal" @click="closeSideBar">
+                  <User /> 
+                  <span>Personal</span>
+                </NuxtLink>
               </SidebarMenuButton>
-            </SidebarMenuItem>-->
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
