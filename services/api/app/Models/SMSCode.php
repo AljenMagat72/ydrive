@@ -37,20 +37,11 @@ class SMSCode extends Model
   protected static function booted(): void
   {
     static::creating(function (SMSCode $model) {
-
-      $origin = request()->header('Origin');
-      if (Config::get('twilio-notification-channel.sms_override_domain') === $origin) {
-        $model->code = '123456';
-      } else {
-        $model->code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-      }
+      $model->code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     });
 
     static::created(function (SMSCode $smsCode) {
-      $origin = request()->header('Origin');
-      if (Config::get('twilio-notification-channel.sms_override_domain') !== $origin) {
-        $smsCode->driver->notify(new LoginCodeNotification($smsCode->code));
-      }
+      $smsCode->driver->notify(new LoginCodeNotification($smsCode->code));
     });
   }
 

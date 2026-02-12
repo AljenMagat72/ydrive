@@ -13,6 +13,7 @@ return [
   'shorten_urls' => (bool) env('TWILIO_SHORTEN_URLS', false), // optional, enable twilio URL shortener
 
   'user_notification_number' => env('TWILIO_USER_NOTIFICATION_NUMBER', ''),
+  'driver_notification_number' => env('TWILIO_DRIVER_NOTIFICATION_NUMBER', ''),
   /**
    * See https://www.twilio.com/docs/sms/services.
    */

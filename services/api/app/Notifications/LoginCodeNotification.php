@@ -35,6 +35,7 @@ class LoginCodeNotification extends Notification
   public function toTwilio(object $notifiable): TwilioMessage
   {
     return (new TwilioSmsMessage)
+    ->from(config('twilio-notification-channel.driver_notification_number'))
     ->content("Your verification code is: $this->code");
   }
 
