@@ -1,41 +1,31 @@
 <script setup lang="ts">
+import { useZoho } from '#imports';
 import { Car } from 'lucide-vue-next';
-import { computed, ref, onMounted } from 'vue';
-
-interface Props {
-  details: any;
-  loading: boolean;
-}
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
   details: any
 }>()
 
-const carAttachmentId = ref<string | null>(null)
-  
-const CarMake = computed(() => props.details?.Make || '---');
-const CarModel = computed(() => props.details?.Model || '---');
-const CarYear = computed(() => props.details?.Year || '---');
+const { make, model, year } = useZoho();
 
-onMounted(async () => {
-  if (props.details?.id) {
-    try {
-      // This calls your Laravel route: Route::get('/driver-documents/{zohoId}', ...)
-      const response = await $fetch<any>(`http://localhost:8000/api/api/driver-documents/${props.details.id}`)
-      
-      // Look for a file in the attachments list that has "car" in the name
-      const file = response.data?.find((f: any) => 
-        f.File_Name.toLowerCase().includes('car')
-      )
-      
-      if (file) {
-        carAttachmentId.value = file.id
-      }
-    } catch (e) {
-      console.error("Could not load car photo ID", e)
-    }
-  }
-})
+const carAttachmentId = ref<string | null>(null)
+
+const sendEmail = () => {
+  const email = 'mary@ydrive.com';
+  const subject = encodeURIComponent(`Car Details Update Request - ${props.details?.Full_Name || 'Driver'}`);
+  
+  let bodyText = `Hello,\n\nI would like to request a Car Details update.\n\n`;
+  bodyText += `Driver Name: ${props.details?.Full_Name}\n`;
+  bodyText += `Current Car Details: ${make.value},\n`;
+  bodyText += `${model.value},\n `;
+  bodyText += `${year.value}\n `;
+  bodyText += `[IMPORTANT]: I have attached my new details to this email.`;
+
+  const mailtoUrl = `mailto:${email}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+  
+  window.location.href = mailtoUrl;
+};
 
 const licenseStatus = computed(() => {
   const expDateStr = props.details?.City_License_Exp;
@@ -65,24 +55,15 @@ const licenseStatus = computed(() => {
 <template>
   <div class="bg-black border border-gray-800 rounded-2xl p-6 flex flex-col gap-y-4 w-full max-w-sm shadow-blue h-full">
     
-    <div class="flex items-center justify-between w-full gap-2">
-        <div class="flex items-center gap-2 min-w-0">
-            <div class="bg-blue-600/20 p-1.5 rounded-lg shrink-0">
-            <Car class="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
-            </div>
-            <span class="text-lg sm:text-xl font-semibold tracking-tight text-white truncate">
-            Car Photo
-            </span>
+    <div class="flex items-center justify-center w-full gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="bg-blue-600/20 p-1.5 rounded-lg shrink-0">
+          <Car class="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
         </div>
-
-        <div class="shrink-0">
-            <span :class="[
-            licenseStatus.class, 
-            'px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-sm font-medium border whitespace-nowrap'
-            ]">
-            {{ licenseStatus.label }}
-            </span>
-        </div>
+        <span class="text-lg sm:text-xl font-semibold tracking-tight text-white truncate">
+          Car Photo
+        </span>
+      </div>
     </div>
 
     <div class="flex flex-col sm:flex-col gap-6 mt-2">
@@ -102,24 +83,27 @@ const licenseStatus = computed(() => {
         <div class="space-y-1">
           <p class="text-white text-sm flex justify-between sm:justify-between gap-2">
             <span class="font-semibold text-white">Make:</span> 
-            <span>{{ CarMake || 'N/A' }}</span>
+            <span>{{ make || 'N/A' }}</span>
           </p>
           <p class="text-white text-sm flex justify-between sm:justify-between gap-2">
             <span class="font-semibold text-white">Model:</span> 
-            <span>{{ CarModel || 'N/A' }}</span>
+            <span>{{ model || 'N/A' }}</span>
           </p>
           <p class="text-white text-sm flex justify-between sm:justify-between gap-2">
             <span class="font-semibold text-white">Year:</span> 
-            <span>{{ CarYear || 'N/A' }}</span>
+            <span>{{ year || 'N/A' }}</span>
           </p>
         </div>
       </div>
     </div>
 
     <div class="flex flex-col mt-auto">
-        <button class="mt-2 w-full sm:w-auto bg-white text-black font-semibold py-2 px-6 rounded-full hover:text-white hover:bg-blue-600 transition-colors ">
+      <button 
+        @click="sendEmail"
+        class="mt-2 w-full sm:w-auto bg-white text-black font-semibold py-2 px-6 rounded-full hover:text-white hover:bg-blue-600 transition-colors"
+      >
         Request Update
-        </button>
+      </button>
     </div>
   </div>
 </template>

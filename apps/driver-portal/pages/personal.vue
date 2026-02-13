@@ -86,7 +86,7 @@ watch(() => user.value?.zoho_id, (newId) => {
     </div>
 
     <div class="">
-      <div v-if="activeTab === 'personal'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-4 justify-items-center">
+      <div v-if="activeTab === 'personal'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-8 gap-x-8 justify-center mx-auto max-w-fit">
         <Banking
         v-if="driverDetails"
         :details="driverDetails" 
@@ -117,7 +117,7 @@ watch(() => user.value?.zoho_id, (newId) => {
         </div>
       </div>
 
-      <div v-if="activeTab === 'vehicle'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-4 justify-items-center">
+      <div v-if="activeTab === 'vehicle'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-8 gap-x-8 justify-center mx-auto max-w-fit">
         <CarPhoto 
         :details="driverDetails" 
         :loading="isLoading"
@@ -136,7 +136,7 @@ watch(() => user.value?.zoho_id, (newId) => {
         />
       </div>
 
-      <div v-if="activeTab === 'documents'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-4 justify-items-center">
+      <div v-if="activeTab === 'documents'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-8 gap-x-8 justify-center mx-auto max-w-fit">
         <DriversAbstract 
         :details="driverDetails" 
         :loading="isLoading"
@@ -147,7 +147,7 @@ watch(() => user.value?.zoho_id, (newId) => {
         />
       </div>
 
-      <div v-if="activeTab === 'licensing'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-4 justify-items-center">
+      <div v-if="activeTab === 'licensing'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-8 gap-x-8 justify-center mx-auto max-w-fit">
         <DriversLicense 
         :details="driverDetails" 
         :loading="isLoading"

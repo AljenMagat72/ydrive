@@ -21,6 +21,11 @@ class ZohoServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->app->runningInConsole()) {
+        $this->commands([
+            \Modules\Zoho\Console\SyncDriversCommand::class,
+        ]);
+    }
         $this->registerCommands();
         $this->registerCommandSchedules();
         $this->registerTranslations();
@@ -43,7 +48,9 @@ class ZohoServiceProvider extends ServiceProvider
      */
     protected function registerCommands(): void
     {
-        // $this->commands([]);
+        $this->commands([
+            \Modules\Zoho\Console\SyncDriversCommand::class,
+        ]);
     }
 
     /**

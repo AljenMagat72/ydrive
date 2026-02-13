@@ -1,50 +1,32 @@
 <script setup lang="ts">
+import { useZoho } from '#imports';
 import { IdCard } from 'lucide-vue-next';
 import { computed, ref, onMounted } from 'vue';
-
-interface Props {
-  details: any;
-  loading: boolean;
-}
 
 const props = defineProps<{
   details: any
 }>()
 
+const { fullName, phone, dob, licenseClass, licenseExp } = useZoho();
+
 const carAttachmentId = ref<string | null>(null)
+
+const sendEmail = () => {
+  const email = 'mary@ydrive.com';
+  const subject = encodeURIComponent(`DriversLicense Update Request - ${props.details?.Full_Name || 'Driver'}`);
   
-const fullName = computed(() => props.details?.Full_Name || '---');
-const phone = computed(() => props.details?.Phone || '---');
-const dob = computed(() => props.details?.Date_of_Birth || '---');
-const licenseNo = computed(() => props.details?.Account || '---');
-const licenseClass = computed(() => props.details?.License_Class || '---');
-const licenseExp = computed(() => props.details?.License_Exp || '---');
-const cityLicenseExp = computed(() => props.details?.City_License_Exp || '---');
+  let bodyText = `Hello,\n\nI would like to request a Drivers License update.\n\n`;
+  bodyText += `Driver Name: ${props.details?.Full_Name}\n`;
+  bodyText += `Current Expiration: ${licenseExp.value}\n`;
+  bodyText += `[IMPORTANT]: I have attached my new details to this email.`;
 
-const imageUrl = computed(() => props.details?.Record_Image || null);
+  const mailtoUrl = `mailto:${email}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+  
+  window.location.href = mailtoUrl;
+};
 
-onMounted(async () => {
-  if (props.details?.id) {
-    try {
-      // This calls your Laravel route: Route::get('/driver-documents/{zohoId}', ...)
-      const response = await $fetch<any>(`http://localhost:8000/api/api/driver-documents/${props.details.id}`)
-      
-      // Look for a file in the attachments list that has "car" in the name
-      const file = response.data?.find((f: any) => 
-        f.File_Name.toLowerCase().includes('car')
-      )
-      
-      if (file) {
-        carAttachmentId.value = file.id
-      }
-    } catch (e) {
-      console.error("Could not load car photo ID", e)
-    }
-  }
-})
-
-const licenseStatus = computed(() => {
-  const expDateStr = props.details?.License_Exp;
+const validity = computed(() => {
+  const expDateStr = licenseExp.value;
   if (!expDateStr) return { label: 'Missing', class: 'bg-gray-500/20 text-gray-400 border-gray-500/30' };
 
   const expDate = new Date(expDateStr);
@@ -76,16 +58,16 @@ const licenseStatus = computed(() => {
           <IdCard class="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
         </div>
         <span class="text-lg sm:text-xl font-semibold tracking-tight text-white truncate">
-          City License
+          Drivers License
         </span>
       </div>
 
       <div class="shrink-0">
         <span :class="[
-          licenseStatus.class, 
+          validity.class, 
           'px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-sm font-medium border whitespace-nowrap'
         ]">
-          {{ licenseStatus.label }}
+          {{ validity.label }}
         </span>
       </div>
     </div>
@@ -129,9 +111,12 @@ const licenseStatus = computed(() => {
       </div>
       
       <div class="flex flex-col mt-auto">
-        <button class="mt-2 w-full sm:w-auto bg-white text-black font-semibold py-2 px-6 rounded-full hover:text-white hover:bg-blue-600 transition-colors ">
-          Request Update
-        </button>
+      <button 
+        @click="sendEmail"
+        class="mt-2 w-full sm:w-auto bg-white text-black font-semibold py-2 px-6 rounded-full hover:text-white hover:bg-blue-600 transition-colors"
+      >
+        Request Update
+      </button>
       </div>
     </div>
   </div>

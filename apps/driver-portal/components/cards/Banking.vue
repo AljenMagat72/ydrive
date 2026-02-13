@@ -1,39 +1,25 @@
 <script setup lang="ts">
+import { useZoho } from '#imports';
 import { Landmark } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 
 const props = defineProps<{
   details: any
 }>()
-  
-const bankName = computed(() => props.details?.Bank_Name || '---');
-const bankAccount = computed(() => props.details?.Account || '---');
-const selectedImage = ref<string | null>(null)
-const carAttachmentId = ref<string | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null);
-const selectedFile = ref<File | null>(null);
-const triggerFileSelect = () => {
-  fileInput.value?.click();
-};
 
-const onFileSelected = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  if (target.files && target.files[0]) {
-    const file = target.files[0];
-    selectedFile.value = file;
-    selectedImage.value = URL.createObjectURL(file);
-  }
-};
+const { bankName, bankAccount } = useZoho();
+
+const carAttachmentId = ref<string | null>(null)
 
 const sendEmail = () => {
   const email = 'mary@ydrive.com';
   const subject = encodeURIComponent(`Banking Update Request - ${props.details?.Full_Name || 'Driver'}`);
   
-  let bodyText = `Hello,\n\nI would like to request a banking update.\n\n`;
+  let bodyText = `Hello,\n\nI would like to request a Banking update.\n\n`;
   bodyText += `Driver Name: ${props.details?.Full_Name}\n`;
   bodyText += `Current Bank: ${bankName.value}\n`;
   bodyText += `Current Account: ${bankAccount.value}\n\n`;
-  bodyText += `[ACTION REQUIRED]: Please attach your new banking document/void cheque to this email before sending.`;
+  bodyText += `[IMPORTANT]: I have attached my new details to this email.`;
 
   const mailtoUrl = `mailto:${email}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
   
@@ -43,13 +29,6 @@ const sendEmail = () => {
 
 <template>
   <div class="bg-black border border-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-blue">
-    <input 
-      type="file" 
-      ref="fileInput" 
-      class="hidden" 
-      accept="image/*" 
-      @change="onFileSelected"
-    />
 
     <div class="flex items-center justify-center w-full gap-2">
       <div class="flex items-center gap-2 min-w-0">

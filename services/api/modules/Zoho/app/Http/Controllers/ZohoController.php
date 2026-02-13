@@ -56,9 +56,29 @@ class ZohoController extends Controller
             $result = $this->zoho->getContactById($id);
 
             if (isset($result['data'][0])) {
+                $z = $result['data'][0];
+
                 return response()->json([
                     'success' => true,
-                    'data'    => $result['data'][0] 
+                    'data' => [
+                            'Full_Name'          => $z['Full_Name'] ?? '---',
+                            'Phone'              => $z['Phone'] ?? '---',
+                            'Date_of_Birth'      => $z['Date_of_Birth'] ?? '---',
+                            'Make'               => $z['Make'] ?? '---',
+                            'Model'              => $z['Model'] ?? '---',
+                            'Year'               => $z['Year'] ?? '---',
+                            'Bank_Name'          => $z['Bank_Name'] ?? '---',
+                            'Bank_Account'       => $z['Account'] ?? '---',   // Maps Zoho "Account" to Interface "Bank_Account"
+                            'HSTGST'             => $z['HST_GST'] ?? '---',   // Maps Zoho "HST_GST" to Interface "HSTGST"
+                            'License_Class'      => $z['License_Class'] ?? '---',
+                            'License_Exp'        => $z['License_Exp'] ?? '---',
+                            'City_License_Exp'   => $z['City_License_Exp'] ?? '---',
+                            'Criminal_Check_Exp' => $z['Criminal_Check_Exp'] ?? '---',
+                            'Abstract_Exp'       => $z['Abstract_Exp'] ?? '---',
+                            'Insurance_Exp'      => $z['Insurance_Exp'] ?? '---',
+                            'Registration_Exp'   => $z['Registration_Exp'] ?? '---',
+                            'Safety_Exp'         => $z['Safety_Exp'] ?? '---',
+                        ]
                 ]);
             }
 

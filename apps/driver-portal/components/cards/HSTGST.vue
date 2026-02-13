@@ -1,28 +1,15 @@
 <script setup lang="ts">
+import { useZoho } from '#imports';
 import { Receipt } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
+
 
 const props = defineProps<{
   details: any
 }>()
-  
-const hstgst = computed(() => props.details?.HST_GST || '---');
-const selectedImage = ref<string | null>(null)
-const carAttachmentId = ref<string | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null);
-const selectedFile = ref<File | null>(null);
-const triggerFileSelect = () => {
-  fileInput.value?.click();
-};
+const { hstGst } = useZoho();
 
-const onFileSelected = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  if (target.files && target.files[0]) {
-    const file = target.files[0];
-    selectedFile.value = file;
-    selectedImage.value = URL.createObjectURL(file);
-  }
-};
+const carAttachmentId = ref<string | null>(null)
 
 const sendEmail = () => {
   const email = 'mary@ydrive.com';
@@ -30,8 +17,8 @@ const sendEmail = () => {
   
   let bodyText = `Hello,\n\nI would like to request a HST/GST update.\n\n`;
   bodyText += `Driver Name: ${props.details?.Full_Name}\n`;
-  bodyText += `Current HST_GST: ${hstgst.value}\n`;
-  bodyText += `[IMPORTANT]: I have attached my new hst/gst document to this email.`;
+  bodyText += `Current HST_GST: ${hstGst.value}\n`;
+  bodyText += `[IMPORTANT]: I have attached my new details to this email.`;
 
   const mailtoUrl = `mailto:${email}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
   
@@ -41,13 +28,6 @@ const sendEmail = () => {
 
 <template>
   <div class="bg-black border border-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-blue">
-    <input 
-      type="file" 
-      ref="fileInput" 
-      class="hidden" 
-      accept="image/*" 
-      @change="onFileSelected"
-    />
     <div class="flex items-center justify-center w-full gap-2">
       <div class="flex items-center gap-2 min-w-0">
         <div class="bg-blue-600/20 p-1.5 rounded-lg shrink-0">
@@ -76,7 +56,7 @@ const sendEmail = () => {
         <div class="space-y-1">
           <p class="text-white text-sm flex justify-between gap-2">
             <span class="font-semibold text-white">HST/GST: </span> 
-            <span>{{ hstgst }}</span>
+            <span>{{ hstGst }}</span>
           </p>
         </div>
       </div>

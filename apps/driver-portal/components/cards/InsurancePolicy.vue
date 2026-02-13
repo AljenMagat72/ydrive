@@ -1,11 +1,7 @@
 <script setup lang="ts">
+import { useZoho } from '#imports';
 import { IdCard } from 'lucide-vue-next';
-import { computed, ref, onMounted } from 'vue';
-
-interface Props {
-  details: any;
-  loading: boolean;
-}
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
   details: any
@@ -13,30 +9,24 @@ const props = defineProps<{
 
 const carAttachmentId = ref<string | null>(null)
   
-const InsuranceExp = computed(() => props.details?.Insurance_Exp || '---');
+const { insuranceExp } = useZoho();
 
-onMounted(async () => {
-  if (props.details?.id) {
-    try {
-      // This calls your Laravel route: Route::get('/driver-documents/{zohoId}', ...)
-      const response = await $fetch<any>(`http://localhost:8000/api/api/driver-documents/${props.details.id}`)
-      
-      // Look for a file in the attachments list that has "car" in the name
-      const file = response.data?.find((f: any) => 
-        f.File_Name.toLowerCase().includes('car')
-      )
-      
-      if (file) {
-        carAttachmentId.value = file.id
-      }
-    } catch (e) {
-      console.error("Could not load car photo ID", e)
-    }
-  }
-})
+const sendEmail = () => {
+  const email = 'mary@ydrive.com';
+  const subject = encodeURIComponent(`Insurance Policy Update Request - ${props.details?.Full_Name || 'Driver'}`);
+  
+  let bodyText = `Hello,\n\nI would like to request a Banking update.\n\n`;
+  bodyText += `Driver Name: ${props.details?.Full_Name}\n`;
+  bodyText += `Insurance Expiration: ${insuranceExp.value}\n`;
+  bodyText += `[IMPORTANT]: I have attached my new details to this email.`;
+
+  const mailtoUrl = `mailto:${email}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+  
+  window.location.href = mailtoUrl;
+};
 
 const validity = computed(() => {
-  const expDateStr = props.details?.Insurance_Exp;
+  const expDateStr = insuranceExp.value;
   
   if (!expDateStr) return { label: 'Invalid', class: 'bg-red-500/20 text-red-400 border-red-500/30' };
 
@@ -100,16 +90,19 @@ const validity = computed(() => {
         <div class="space-y-1">
           <p class="text-white text-sm flex justify-between sm:justify-between gap-2">
             <span class="font-semibold text-white">Insurance Expiry:</span> 
-            <span>{{ InsuranceExp || 'N/A' }}</span>
+            <span>{{ insuranceExp || 'N/A' }}</span>
           </p>
         </div>
       </div>
     </div>
 
     <div class="flex flex-col mt-auto">
-        <button class="mt-2 w-full sm:w-auto bg-white text-black font-semibold py-2 px-6 rounded-full hover:text-white hover:bg-blue-600 transition-colors ">
-        Request Update
-        </button>
+        <button 
+            @click="sendEmail"
+            class="mt-2 w-full sm:w-auto bg-white text-black font-semibold py-2 px-6 rounded-full hover:text-white hover:bg-blue-600 transition-colors"
+          >
+            Request Update
+          </button>
     </div>
   </div>
 </template>

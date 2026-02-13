@@ -1,50 +1,32 @@
 <script setup lang="ts">
+import { useZoho } from '#imports';
 import { IdCard } from 'lucide-vue-next';
-import { computed, ref, onMounted } from 'vue';
-
-interface Props {
-  details: any;
-  loading: boolean;
-}
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
   details: any
 }>()
 
+const { fullName, phone, cityLicenseExp } = useZoho();
+
 const carAttachmentId = ref<string | null>(null)
+
+const sendEmail = () => {
+  const email = 'mary@ydrive.com';
+  const subject = encodeURIComponent(`City Drivers License Update Request - ${props.details?.Full_Name || 'Driver'}`);
   
-const fullName = computed(() => props.details?.Full_Name || '---');
-const phone = computed(() => props.details?.Phone || '---');
-const dob = computed(() => props.details?.Date_of_Birth || '---');
-const licenseNo = computed(() => props.details?.Account || '---');
-const licenseClass = computed(() => props.details?.License_Class || '---');
-const licenseExp = computed(() => props.details?.License_Exp || '---');
-const cityLicenseExp = computed(() => props.details?.City_License_Exp || '---');
+  let bodyText = `Hello,\n\nI would like to request a City Drivers License update.\n\n`;
+  bodyText += `Driver Name: ${props.details?.Full_Name}\n`;
+  bodyText += `Current Expiration: ${cityLicenseExp.value}\n`;
+  bodyText += `[IMPORTANT]: I have attached my new details to this email.`;
 
-const imageUrl = computed(() => props.details?.Record_Image || null);
+  const mailtoUrl = `mailto:${email}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+  
+  window.location.href = mailtoUrl;
+};
 
-onMounted(async () => {
-  if (props.details?.id) {
-    try {
-      // This calls your Laravel route: Route::get('/driver-documents/{zohoId}', ...)
-      const response = await $fetch<any>(`http://localhost:8000/api/api/driver-documents/${props.details.id}`)
-      
-      // Look for a file in the attachments list that has "car" in the name
-      const file = response.data?.find((f: any) => 
-        f.File_Name.toLowerCase().includes('car')
-      )
-      
-      if (file) {
-        carAttachmentId.value = file.id
-      }
-    } catch (e) {
-      console.error("Could not load car photo ID", e)
-    }
-  }
-})
-
-const licenseStatus = computed(() => {
-  const expDateStr = props.details?.City_License_Exp;
+const validity = computed(() => {
+  const expDateStr = cityLicenseExp.value;
   
   if (!expDateStr) return { label: 'Invalid', class: 'bg-red-500/20 text-red-400 border-red-500/30' };
 
@@ -83,10 +65,10 @@ const licenseStatus = computed(() => {
 
         <div class="shrink-0">
             <span :class="[
-            licenseStatus.class, 
+            validity.class, 
             'px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-sm font-medium border whitespace-nowrap'
             ]">
-            {{ licenseStatus.label }}
+            {{ validity.label }}
             </span>
         </div>
     </div>
@@ -111,11 +93,7 @@ const licenseStatus = computed(() => {
             <span>{{ fullName || 'N/A' }}</span>
           </p>
           <p class="text-white text-sm flex justify-between sm:justify-between gap-2">
-            <span class="font-semibold text-white">Phone Number:</span> 
-            <span>{{ phone || 'N/A' }}</span>
-          </p>
-          <p class="text-white text-sm flex justify-between sm:justify-between gap-2">
-            <span class="font-semibold text-white">City License Expiration:</span> 
+            <span class="font-semibold text-white">License Expiration:</span> 
             <span class="justify-center">{{ cityLicenseExp || 'N/A' }}</span>
           </p>
         </div>
@@ -123,9 +101,12 @@ const licenseStatus = computed(() => {
     </div>
 
     <div class="flex flex-col mt-auto">
-        <button class="mt-2 w-full sm:w-auto bg-white text-black font-semibold py-2 px-6 rounded-full hover:text-white hover:bg-blue-600 transition-colors ">
+      <button 
+        @click="sendEmail"
+        class="mt-2 w-full sm:w-auto bg-white text-black font-semibold py-2 px-6 rounded-full hover:text-white hover:bg-blue-600 transition-colors"
+      >
         Request Update
-        </button>
+      </button>
     </div>
   </div>
 </template>
