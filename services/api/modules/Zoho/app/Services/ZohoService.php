@@ -41,8 +41,21 @@ class ZohoService
         $fullPath = storage_path('app/zoho/tokens.json');
 
         if (!file_exists($fullPath)) {
-            throw new \Exception("Token file missing at: " . $fullPath);
+        if (config('zoho.refresh_token')) {
+            // Create the directory if it doesn't exist
+            if (!is_dir(dirname($fullPath))) {
+                mkdir(dirname($fullPath), 0755, true);
+            }
+            
+            $initialTokens = [
+                'refresh_token' => config('zoho.refresh_token'),
+                'access_token'  => config('zoho.access_token'), // Optional
+            ];
+            file_put_contents($fullPath, json_encode($initialTokens));
+        } else {
+            throw new \Exception("Zoho Configuration missing: No token file and no ZOHO_REFRESH_TOKEN in ENV.");
         }
+    }
 
         $content = file_get_contents($fullPath);
         $tokens = json_decode($content, true);
