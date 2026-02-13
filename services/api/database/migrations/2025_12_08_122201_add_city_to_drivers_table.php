@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('drivers', function (Blueprint $table) {
             $table->unsignedInteger('acceptance_rate')->default(0);
-            $table->decimal('minimum_scheduled_hours', 5, 2)->default(0)->after('acceptance_rate');
+            //$table->decimal('minimum_scheduled_hours', 5, 2)->default(0)->after('acceptance_rate');
         });
     }
 

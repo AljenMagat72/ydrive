@@ -12,10 +12,10 @@ return new class extends Migration {
 
       $table->dropColumn('original_vendor_id');
 
-      $table->foreign('vendor_list_id')
+      /*$table->foreign('vendor_list_id')
         ->references('id')
         ->on('vendor_lists')
-        ->onDelete('set null');
+        ->onDelete('set null');*/
     });
   }
 
