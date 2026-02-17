@@ -38,14 +38,7 @@ export function useZoho() {
 
     isLoading.value = true;
     try {
-      const response = await get<any>(
-        '/api/driver-details',
-        {}, 
-        {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${authToken.value}`
-        }
-      );
+      const response = await get('/api/driver-details');
       
       if (response && response.success) {
         driverDetails.value = response.data;
@@ -58,17 +51,10 @@ export function useZoho() {
   }
 
     async function fetchSecureImage(fileId: string) {
-    if (!process.client || !authToken.value || !fileId) return null;
+    if (!authToken.value || !fileId) return null;
 
     try {
-      const response = await get<Blob>(`/api/view-attachment/${fileId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken.value}`,
-          'Accept': 'image/*, application/octet-stream'
-        },
-        responseType: 'blob' 
-      });
+      const response = await get<Blob>(`/api/view-attachment/${fileId}`);
 
       if (!response || response.size === 0) {
         console.warn(`Attachment ${fileId} returned an empty blob.`);
