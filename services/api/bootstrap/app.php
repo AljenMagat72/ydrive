@@ -48,7 +48,7 @@ return Application::configure(basePath: dirname(__DIR__))
   ->withSchedule(function (Schedule $schedule) {
     $cities = config('autofleet.cities');
 
-    foreach ($cities as $cityName => $city) {
+    /*foreach ($cities as $cityName => $city) {
       $schedule->command("driver:warn-minimum-hours \"$cityName\"")
         ->timezone($city['timezone'])
         ->wednesdays()
@@ -66,10 +66,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ->fridays()
         ->at('08:00')
         ->withoutOverlapping();
-    }
+    }*/
 
     $schedule->command('driver:update-acceptance-rate')
-      ->dailyAt('00:00')
+      ->everyFourHours()
       ->withoutOverlapping();
 
     $schedule->command('app:populate-drivers')
