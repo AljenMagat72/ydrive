@@ -3,96 +3,117 @@
 namespace Modules\Zoho\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 use Modules\Zoho\Services\ZohoService;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 
 class ZohoController extends Controller
 {
-    protected $zoho;
+    protected ZohoService $zoho;
 
     public function __construct(ZohoService $zoho)
     {
         $this->zoho = $zoho;
     }
 
-    public function index(Request $request)
+    /**
+     * Helper to get Zoho ID from the drivers table
+     */
+    private function getZohoId(Request $request)
     {
-        // Get current page from URL, default to 1
-        $page = $request->get('page', 1);
-
-        try {
-            // Fetch live data from Zoho
-            $results = $this->zoho->getDrivers($page);
-
-            return view('zoho::index', [
-                'drivers'     => $results['data'] ?? [],
-                'info'        => $results['info'] ?? [],
-                'currentPage' => $page
-            ]);
-        } catch (\Exception $e) {
-            return back()->withError("Could not fetch drivers: " . $e->getMessage());
-        }
+    return $request->user()->zoho_id;
     }
 
-    public function profile()
-    {
-        $user = auth()->user();
-
-        if (!$user->zoho_id) {
-            return "This account is not linked to a Zoho Driver.";
-        }
-
-        // You can either show the data saved in the DB:
-        return view('zoho::profile', ['driver' => $user]);
-
-        // OR fetch the LATEST live data from Zoho using their ID:
-        // $liveData = $this->zoho->getDriverById($user->zoho_id);
-        // return view('zoho::profile', ['driver' => $liveData]);
-    }
-    public function show($id)
+    public function show(Request $request): JsonResponse
     {
         try {
-            $result = $this->zoho->getContactById($id);
+            $zohoId = $this->getZohoId($request);
 
-            if (isset($result['data'][0])) {
-                $z = $result['data'][0];
-
+            if (!$zohoId) {
                 return response()->json([
-                    'success' => true,
-                    'data' => [
-                            'Full_Name'          => $z['Full_Name'] ?? '---',
-                            'Phone'              => $z['Phone'] ?? '---',
-                            'Date_of_Birth'      => $z['Date_of_Birth'] ?? '---',
-                            'Make'               => $z['Make'] ?? '---',
-                            'Model'              => $z['Model'] ?? '---',
-                            'Year'               => $z['Year'] ?? '---',
-                            'Bank_Name'          => $z['Bank_Name'] ?? '---',
-                            'Bank_Account'       => $z['Account'] ?? '---',   // Maps Zoho "Account" to Interface "Bank_Account"
-                            'HSTGST'             => $z['HST_GST'] ?? '---',   // Maps Zoho "HST_GST" to Interface "HSTGST"
-                            'License_Class'      => $z['License_Class'] ?? '---',
-                            'License_Exp'        => $z['License_Exp'] ?? '---',
-                            'City_License_Exp'   => $z['City_License_Exp'] ?? '---',
-                            'Criminal_Check_Exp' => $z['Criminal_Check_Exp'] ?? '---',
-                            'Abstract_Exp'       => $z['Abstract_Exp'] ?? '---',
-                            'Insurance_Exp'      => $z['Insurance_Exp'] ?? '---',
-                            'Registration_Exp'   => $z['Registration_Exp'] ?? '---',
-                            'Safety_Exp'         => $z['Safety_Exp'] ?? '---',
-                        ]
-                ]);
+                    'success' => false, 
+                    'message' => 'No Zoho profile linked to this account.'
+                ], 403);
+            }
+
+            $result = $this->zoho->getContactById($zohoId);
+            $z = $result['data'][0] ?? null;
+
+            if (!$z) {
+                return response()->json(['success' => false, 'message' => 'Driver not found in Zoho'], 404);
             }
 
             return response()->json([
-                'success' => false,
-                'message' => 'Driver not found in Zoho'
-            ], 404);
+                'success' => true,
+                'data' => [
+                    'id'                 => $zohoId,
+                    'Full_Name'          => $z['Full_Name'] ?? null,
+                    'Phone'              => $z['Phone'] ?? null,
+                    'Date_of_Birth'      => $z['Date_of_Birth'] ?? null,
+                    'Make'               => $z['Make'] ?? null,
+                    'Model'              => $z['Model'] ?? null,
+                    'Year'               => $z['Year'] ?? null,
+                    'Bank_Name'          => $z['Bank_Name'] ?? null,
+                    'Bank_Account'       => $z['Account'] ?? null,
+                    'HSTGST'             => $z['HST_GST'] ?? null,
+                    'License_Class'      => $z['License_Class'] ?? null,
+                    'License_Exp'        => $z['License_Exp'] ?? null,
+                    'City_License_Exp'   => $z['City_License_Exp'] ?? null,
+                    'Criminal_Check_Exp' => $z['Criminal_Check_Exp'] ?? null,
+                    'Abstract_Exp'       => $z['Abstract_Exp'] ?? null,
+                    'Insurance_Exp'      => $z['Insurance_Exp'] ?? null,
+                    'Registration_Exp'   => $z['Registration_Exp'] ?? null,
+                    'Safety_Exp'         => $z['Safety_Exp'] ?? null,
 
+                    // Document File IDs
+                    'Vehicle_Safety'     => $z['Vehicle_Safety'] ?? null,
+                    'Insurance_Photo'    => $z['Insurance_Photo'] ?? null,
+                    'Drivers_License'    => $z['Drivers_License'] ?? null,
+                    'City_License_Permit'=> $z['City_License_Permit'] ?? null,
+                    'Car_Photo'          => $z['Car_Photo'] ?? null,
+                    'Vehicle_Ownership'  => $z['Vehicle_Ownership'] ?? null,
+                    'Drivers_Abstract'   => $z['Drivers_Abstract'] ?? null,
+                    'Criminal_Vulnerable'=> $z['Criminal_Vulnerable'] ?? null,
+                ]
+            ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
-    
+
+    public function viewAttachment(Request $request, string $fileId)
+    {
+        $contactId = $this->getZohoId($request);
+
+        if (!$contactId) {
+            return response()->json(['error' => 'No Zoho ID linked to user'], 403);
+        }
+
+        $file = $this->zoho->downloadFileField($contactId, $fileId);
+        
+        if (!$file || empty($file['content'])) {
+            return response()->json([
+                'error' => 'File content is empty or not found',
+                'file_id' => $fileId
+            ], 404);
+        }
+
+        return response($file['content'], 200)
+            ->header('Content-Type', $file['type'] ?? 'image/jpeg')
+            ->header('Cache-Control', 'public, max-age=86400')
+            ->header('Content-Disposition', 'inline; filename="attachment"');
+    }
+
+    public function getDocuments(Request $request)
+    {
+        $zohoId = $this->getZohoId($request);
+
+        if (!$zohoId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        return $this->zoho->getAttachments($zohoId);
+    }
 }

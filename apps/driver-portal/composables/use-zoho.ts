@@ -2,6 +2,7 @@ import { computed, readonly, ref } from 'vue';
 import { useAuth, useAPI, useAuthToken } from '#imports';
 
 interface ZohoDriver {
+  id?: string;
   Full_Name?: string;
   Phone?: string;
   Date_of_Birth?: string;
@@ -22,10 +23,8 @@ interface ZohoDriver {
   [key: string]: any;
 }
 
-// Keep these outside the function if you want state to persist across components
+
 const driverDetails = ref<ZohoDriver | null>(null);
-const documents = ref<any[]>([]);
-const isDocsLoading = ref<boolean>(false);
 const isLoading = ref<boolean>(false);
 
 export function useZoho() {
@@ -40,7 +39,7 @@ export function useZoho() {
     isLoading.value = true;
     try {
       const response = await get<any>(
-        `/api/driver-details/${zohoId}`, 
+        '/api/driver-details',
         {}, 
         {
           'Accept': 'application/json',
@@ -58,32 +57,54 @@ export function useZoho() {
     }
   }
 
-  async function fetchDocuments() {
-    const zohoId = user.value?.zoho_id;
-    if (!zohoId || isDocsLoading.value) return;
+    async function fetchSecureImage(fileId: string) {
+    if (!process.client || !authToken.value || !fileId) return null;
 
-    isDocsLoading.value = true;
     try {
-      const response = await get<any>(
-        `/api/driver-documents/${zohoId}`,
-        {},
-        { 'Authorization': `Bearer ${authToken.value}` }
-      );
-      if (response && response.data) documents.value = response.data;
-    } catch (error) {
-      console.error("Error fetching documents:", error);
-    } finally {
-      isDocsLoading.value = false;
+      const response = await get<Blob>(`/api/view-attachment/${fileId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken.value}`,
+          'Accept': 'image/*, application/octet-stream'
+        },
+        responseType: 'blob' 
+      });
+
+      if (!response || response.size === 0) {
+        console.warn(`Attachment ${fileId} returned an empty blob.`);
+        return null;
+      }
+
+      return URL.createObjectURL(response);
+    } catch (e) {
+      console.error("Secure Image Fetch Error:", e);
+      return null;
     }
+  }
+
+  async function viewAttachment(fileId: string) {
+    try {
+      const response = await get<Blob>(`/api/view-attachment/${fileId}`, {}, {
+      });
+      
+      return response;
+    } catch (error) {
+      console.error("Error fetching attachment:", error);
+      throw error;
+    }
+  }
+
+  async function logout() {
+    driverDetails.value = null;
   }
 
   return {
     driverDetails: readonly(driverDetails),
     isLoading: readonly(isLoading),
-    documents: readonly(documents),
-    isDocsLoading: readonly(isDocsLoading),
     fetchZohoDetails,
-    fetchDocuments,
+    fetchSecureImage,
+    viewAttachment,
+    logout,
     
     // --- Identification & Personal ---
     fullName: computed(() => driverDetails.value?.Full_Name || '---'),

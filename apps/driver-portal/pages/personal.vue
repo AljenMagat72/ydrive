@@ -28,19 +28,14 @@ const tabs = [
   { id: 'licensing', label: 'Licensing' }
 ];
 
-//watch(isLoggedIn, (isNowLoggedIn) => {
-  //if (isNowLoggedIn && user.value?.zoho_id) {
-  //  fetchZohoDetails();
- // }
-//}, { immediate: true });
-
-// Fetch when the component mounts
 onMounted(async () => {
   if (!isLoggedIn.value) {
     await me();
   } 
-  if (user.value?.zoho_id && !driverDetails.value && !isLoading.value) {
-    fetchZohoDetails();
+
+  const zohoId = user.value?.zoho_id;
+  if (zohoId && !driverDetails.value && !isLoading.value) {
+    await fetchZohoDetails();
   }
 });
 
@@ -54,9 +49,8 @@ watch(() => user.value?.zoho_id, (newId) => {
 <template>
   <div class="flex flex-col gap-y-12 p-8 min-h-screen">
     <div class="flex justify-center w-full">
-      <div class="w-full flex justify-center">
-        <div class="sm:hidden w-full px-4">
-          <div class="relative w-full">
+      <div class="sm:hidden w-full px-4">
+        <div class="relative w-full">
           <select 
             v-model="activeTab"
             class="w-full bg-black border border-blue-500 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-blue"
@@ -71,98 +65,56 @@ watch(() => user.value?.zoho_id, (newId) => {
         </div>
       </div>
 
-    <div class="hidden sm:inline-flex bg-black border border-blue-500 rounded-full shadow-blue overflow-hidden">
-      <button 
-        v-for="tab in tabs" 
-        :key="tab.id"
-        @click="activeTab = tab.id"
-        class="px-8 py-2 text-lg font-semibold transition-all duration-200"
-        :class="activeTab === tab.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
-  </div>
-    </div>
-
-    <div class="">
-      <div v-if="activeTab === 'personal'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-8 gap-x-8 justify-center mx-auto max-w-fit">
-        <Banking
-        v-if="driverDetails"
-        :details="driverDetails" 
-        :loading="isLoading"
-        />
-
-        <HSTGST
-        v-if="driverDetails"
-        :details="driverDetails" 
-        :loading="isLoading"
-        />
-
-        <div 
-          v-if="isLoading" 
-          class="fixed inset-0 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm z-50"
+      <div class="hidden sm:inline-flex bg-black border border-blue-500 rounded-full shadow-blue overflow-hidden">
+        <button 
+          v-for="tab in tabs" 
+          :key="tab.id"
+          @click="activeTab = tab.id"
+          class="px-8 py-2 text-lg font-semibold transition-all duration-200"
+          :class="activeTab === tab.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'"
         >
-          <div class="relative">
-            <div class="w-20 h-20 rounded-full border-4 border-t-blue-500 border-r-blue-700 border-b-blue-900 border-l-blue-900 animate-spin"></div>
-            
-            <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-blue-500 font-bold text-xs">LOADING</span>
-            </div>
+          {{ tab.label }}
+        </button>
+      </div>
+    </div>
+
+    <div class="relative min-h-[400px]">
+      
+      <div v-if="isLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm z-50 rounded-2xl">
+        <div class="relative">
+          <div class="w-20 h-20 rounded-full border-4 border-t-blue-500 border-r-blue-700 border-b-blue-900 border-l-blue-900 animate-spin"></div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="text-blue-500 font-bold text-[10px]">LOADING</span>
           </div>
-          
-          <span class="mt-4 text-white text-sm font-medium tracking-widest animate-pulse">
-            Connecting to Zoho...
-          </span>
+        </div>
+        <span class="mt-4 text-white text-sm font-medium tracking-widest animate-pulse">
+          Syncing with Zoho...
+        </span>
+      </div>
+
+      <div v-if="driverDetails">
+        <div v-if="activeTab === 'personal'" class="grid grid-cols-1 lg:grid-cols-2 gap-8 justify-center mx-auto max-w-fit">
+          <Banking :details="driverDetails" />
+          <HSTGST :details="driverDetails" />
+        </div>
+
+        <div v-if="activeTab === 'vehicle'" class="grid grid-cols-1 lg:grid-cols-2 gap-8 justify-center mx-auto max-w-fit">
+          <CarPhoto :details="driverDetails" />
+          <InsurancePolicy :details="driverDetails" />
+          <Ownership :details="driverDetails" />
+          <VehicleSafety :details="driverDetails" />
+        </div>
+
+        <div v-if="activeTab === 'documents'" class="grid grid-cols-1 lg:grid-cols-2 gap-8 justify-center mx-auto max-w-fit">
+          <DriversAbstract :details="driverDetails" />
+          <CERTN :details="driverDetails" />
+        </div>
+
+        <div v-if="activeTab === 'licensing'" class="grid grid-cols-1 lg:grid-cols-2 gap-8 justify-center mx-auto max-w-fit">
+          <DriversLicense :details="driverDetails" />
+          <CityLicense :details="driverDetails" />
         </div>
       </div>
-
-      <div v-if="activeTab === 'vehicle'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-8 gap-x-8 justify-center mx-auto max-w-fit">
-        <CarPhoto 
-        :details="driverDetails" 
-        :loading="isLoading"
-        />
-        <InsurancePolicy 
-        :details="driverDetails" 
-        :loading="isLoading"
-        />
-        <Ownership 
-        :details="driverDetails" 
-        :loading="isLoading"
-        />
-        <VehicleSafety 
-        :details="driverDetails" 
-        :loading="isLoading"
-        />
-      </div>
-
-      <div v-if="activeTab === 'documents'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-8 gap-x-8 justify-center mx-auto max-w-fit">
-        <DriversAbstract 
-        :details="driverDetails" 
-        :loading="isLoading"
-        />
-        <CERTN 
-        :details="driverDetails" 
-        :loading="isLoading"
-        />
-      </div>
-
-      <div v-if="activeTab === 'licensing'" class="grid grid-cols-1 lg:grid-cols-2 gap-y-8 gap-x-8 justify-center mx-auto max-w-fit">
-        <DriversLicense 
-        :details="driverDetails" 
-        :loading="isLoading"
-        />
-        <CityLicense 
-        :details="driverDetails" 
-        :loading="isLoading"
-        />
-      </div>
     </div>
-
-    <div class="">
-
-      
-    </div>
-
   </div>
 </template>
