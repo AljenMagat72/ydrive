@@ -2,6 +2,9 @@
   "name": "driver-portal",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
