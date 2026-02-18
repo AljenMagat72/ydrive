@@ -23,7 +23,7 @@ import { computed } from 'vue';
 const { user, logout } = useAuth();
 const { setOpenMobile } = useSidebar();
 const config = useRuntimeConfig();
-const showPersonal = computed(() => config.public.showPersonalRoutes);
+const showPersonal = computed(() => config.public.showZohoDocs);
 
 function closeSideBar() {
   setOpenMobile(false);
