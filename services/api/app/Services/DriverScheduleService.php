@@ -123,5 +123,21 @@ class DriverScheduleService
       ->get();
   }
 
+  public function range(string $startDate, string $endDate, string $city): Collection
+  {
+    $startDateString = Carbon::parse($startDate)->startOfDay();
+    $endDateString   = Carbon::parse($endDate)->endOfDay();
+
+    return DriverSchedule::with('driver')
+      ->whereBetween('starts_at', [$startDateString, $endDateString])
+      ->when($city !== 'All', function ($query) use ($city) {
+        $query->whereHas('driver', function ($query) use ($city) {
+          $query->where('city_id', 'LIKE', "%{$city}%");
+        });
+      })
+      ->orderBy('starts_at')
+      ->get();
+  }
+
   public function withIncompleteSchedules() {}
 }

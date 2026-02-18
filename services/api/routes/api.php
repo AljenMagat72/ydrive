@@ -56,6 +56,7 @@ Route::prefix('v1')->middleware(['throttle:global'])->group(function () {
         Route::post('driver/schedule/store', [AdminScheduleController::class, 'store']);
 
         Route::get('driver/schedule/daily', [DriverScheduleController::class, 'daily']);
+        Route::get('driver/schedule/range', [DriverScheduleController::class, 'range']);
         Route::get('driver/all', [DriverScheduleController::class, 'all']);
         Route::get('driver/schedule/delinquents', [DriverScheduleController::class, 'delinquents']);
 

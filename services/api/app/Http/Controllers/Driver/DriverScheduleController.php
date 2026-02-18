@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Driver;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Driver\CreateScheduleRequest;
 use App\Http\Requests\Driver\DailyScheduleRequest;
+use App\Http\Requests\Driver\RangeScheduleRequest;
 use App\Http\Requests\Driver\DeleteScheduleRequest;
 use App\Http\Requests\Driver\WeeklyScheduleRequest;
 use App\Http\Resources\Driver\DriverAdminResource;
@@ -25,8 +26,7 @@ class DriverScheduleController extends Controller
   public function __construct(
     protected DriverScheduleService $driverScheduleService,
     protected DriverService $driverService,
-  ) {
-  }
+  ) {}
   /**
    * Create a schedule.
    */
@@ -127,6 +127,20 @@ class DriverScheduleController extends Controller
       'schedules' => DriverScheduleResource::collection($schedules),
     ]);
   }
+
+  /**
+   * Retrieve schedules of driver on the given date range
+   */
+  public function range(RangeScheduleRequest $request): JsonResponse
+  {
+    $schedules = $this->driverScheduleService->range($request->input('start_date'), $request->input('end_date'), $request->input('city'));
+
+    return response()->json([
+      'success' => true,
+      'schedules' => DriverScheduleResource::collection($schedules),
+    ]);
+  }
+
 
   public function all(\Illuminate\Http\Request $request): JsonResponse
   {
