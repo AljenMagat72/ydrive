@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Calendar, CalendarClock, CalendarPlus, ChevronRight, LogOut, User } from 'lucide-vue-next';
-import { useAuth } from '#imports';
+import { useAuth, useRuntimeConfig } from '#imports';
 import {
   Sidebar,
   SidebarContent,
@@ -18,9 +18,12 @@ import {
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent, } from './ui/collapsible';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { computed } from 'vue';
 
 const { user, logout } = useAuth();
 const { setOpenMobile } = useSidebar();
+const config = useRuntimeConfig();
+const showPersonal = computed(() => config.public.showPersonalRoutes);
 
 function closeSideBar() {
   setOpenMobile(false);
@@ -91,7 +94,7 @@ function closeSideBar() {
                 </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="showPersonal">
               <SidebarMenuButton as-child>
                 <NuxtLink to="/personal" @click="closeSideBar">
                   <User /> 

@@ -39,6 +39,9 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     chartKey: process.env.CHART_KEY,
+    public: {
+      showZohoDocs: process.env.SHOW_PERSONAL_ROUTES === 'true'
+    }
   },
 
   sentry: {
