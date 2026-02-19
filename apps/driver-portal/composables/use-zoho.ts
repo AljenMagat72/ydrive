@@ -4,6 +4,7 @@ import { useAuth, useAPI, useAuthToken } from '#imports';
 interface ZohoDriver {
   id?: string;
   Full_Name?: string;
+  City?: string;
   Phone?: string;
   Date_of_Birth?: string;
   Make?: string;
@@ -96,6 +97,7 @@ export function useZoho() {
     fullName: computed(() => driverDetails.value?.Full_Name || '---'),
     phone: computed(() => driverDetails.value?.Phone || '---'),
     dob: computed(() => driverDetails.value?.Date_of_Birth || '---'),
+    city: computed(() => driverDetails.value?.City || '---'),
 
     // --- Vehicle Details ---
     make: computed(() => driverDetails.value?.Make || '---'),

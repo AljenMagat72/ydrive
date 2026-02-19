@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useAuth, useZoho, definePageMeta } from '#imports'
 import DriversLicense from '@/components/cards/DriversLicense.vue';
 import CityLicense from '@/components/cards/CityLicense.vue';
@@ -10,7 +10,7 @@ import InsurancePolicy from '@/components/cards/InsurancePolicy.vue';
 import Ownership from '@/components/cards/Ownership.vue';
 import VehicleSafety from '@/components/cards/VehicleSafety.vue';
 import DriversAbstract from '@/components/cards/DriversAbstract.vue';
-import CERTN from '@/components/cards/CERTN.vue';
+import CriminalCheck from '@/components/cards/CriminalCheck.vue';
 import { ChevronDown } from 'lucide-vue-next';
 
 definePageMeta({
@@ -19,7 +19,23 @@ definePageMeta({
 
 const { user, isLoggedIn, me } = useAuth();
 const { fetchZohoDetails, driverDetails, isLoading } = useZoho();
+const driverCity = computed(() => driverDetails.value?.City?.trim() || '');
 const activeTab = ref('personal');
+
+const showCriminalCheck = computed(() => {
+  const restrictedCities = ['Lindsay', 'Cobourg', 'Medicine Hat', 'Lethbridge'];
+  return !restrictedCities.includes(driverCity.value);
+});
+
+const showVehicleSafety = computed(() => {
+  const restrictedCities = ['Grande Prairie', 'Medicine Hat', 'Lethbridge'];
+  return !restrictedCities.includes(driverCity.value);
+});
+
+const showCityLicense = computed(() => {
+  const restrictedCities = ['Medicine Hat', 'Lethbridge'];
+  return !restrictedCities.includes(driverCity.value);
+});
 
 const tabs = [
   { id: 'personal', label: 'Personal' },
@@ -47,6 +63,10 @@ watch(() => user.value?.zoho_id, (newId) => {
 </script>
 
 <template>
+  <div class="text-white bg-gray-800 p-2 text-xs rounded mb-4">
+  Current City: "{{ driverCity }}" | 
+  Hide Safety? {{ !showVehicleSafety }}
+</div>
   <div class="flex flex-col gap-y-12 p-8 min-h-screen">
     <div class="flex justify-center w-full">
       <div class="sm:hidden w-full px-4">
@@ -102,17 +122,17 @@ watch(() => user.value?.zoho_id, (newId) => {
           <CarPhoto :details="driverDetails" />
           <InsurancePolicy :details="driverDetails" />
           <Ownership :details="driverDetails" />
-          <VehicleSafety :details="driverDetails" />
+          <VehicleSafety v-if="showVehicleSafety" :details="driverDetails" />
         </div>
 
-        <div v-if="activeTab === 'documents'" class="grid grid-cols-1 lg:grid-cols-2 gap-8 justify-center mx-auto max-w-fit">
+        <div v-if="activeTab === 'documents'" class="flex flex-wrap gap-8 justify-center mx-auto max-w-fit">
           <DriversAbstract :details="driverDetails" />
-          <CERTN :details="driverDetails" />
+          <CriminalCheck v-if="showCriminalCheck" :details="driverDetails" />
         </div>
 
-        <div v-if="activeTab === 'licensing'" class="grid grid-cols-1 lg:grid-cols-2 gap-8 justify-center mx-auto max-w-fit">
+        <div v-if="activeTab === 'licensing'" class="flex flex-wrap gap-8 justify-center mx-auto max-w-fit">
           <DriversLicense :details="driverDetails" />
-          <CityLicense :details="driverDetails" />
+          <CityLicense v-if="showCityLicense" :details="driverDetails" />
         </div>
       </div>
     </div>

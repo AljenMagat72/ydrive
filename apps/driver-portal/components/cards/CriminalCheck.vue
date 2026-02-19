@@ -89,7 +89,7 @@ const sendEmail = () => {
         <div class="bg-blue-600/20 p-1.5 rounded-lg shrink-0">
           <IdCard class="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
         </div>
-        <span class="text-lg sm:text-xl font-semibold tracking-tight text-white truncate">CERTN</span>
+        <span class="text-lg sm:text-xl font-semibold tracking-tight text-white truncate">Vulnerability Check</span>
       </div>
 
       <div class="shrink-0">
@@ -123,7 +123,7 @@ const sendEmail = () => {
       <div class="flex flex-col justify-top space-y-2 w-full flex-grow">
         <div class="space-y-1">
           <p class="text-white text-sm flex justify-between gap-2">
-            <span class="font-semibold text-white">CERTN Expiry:</span> 
+            <span class="font-semibold text-white">Vulnerability Expiry:</span> 
             <span>{{ criminalCheckExp || 'N/A' }}</span>
           </p>
         </div>

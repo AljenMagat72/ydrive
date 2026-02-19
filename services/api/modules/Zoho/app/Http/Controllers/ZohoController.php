@@ -50,6 +50,7 @@ class ZohoController extends Controller
                 'data' => [
                     'id'                 => $zohoId,
                     'Full_Name'          => $z['Full_Name'] ?? null,
+                    'City'               => $z['City'] ?? null,
                     'Phone'              => $z['Phone'] ?? null,
                     'Date_of_Birth'      => $z['Date_of_Birth'] ?? null,
                     'Make'               => $z['Make'] ?? null,
