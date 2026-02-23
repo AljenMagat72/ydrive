@@ -47,7 +47,7 @@ class RegistrationRequest extends FormRequest
         if (config('recaptchav3.enabled')) {
             $rules['recaptcha'] = [
                 Rule::requiredIf(app()->environment('production')),
-                'recaptchav3:register,0.5',
+                'recaptchav3:register,0.3',
             ];
         }
 

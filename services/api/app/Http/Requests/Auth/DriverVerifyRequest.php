@@ -19,7 +19,7 @@ class DriverVerifyRequest extends FormRequest
     ];
 
     if (config('recaptchav3.enabled')) {
-      $rules['captcha'] = 'required|recaptchav3:verify,0.5';
+      $rules['captcha'] = 'required|recaptchav3:verify,0.3';
     }
 
     return $rules;

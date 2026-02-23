@@ -26,7 +26,7 @@ class DriverLoginRequest extends FormRequest
     ];
 
     if (config('recaptchav3.enabled')) {
-      $rules['captcha'] = 'required|recaptchav3:register,0.5';
+      $rules['captcha'] = 'required|recaptchav3:register,0.3';
     }
 
     return $rules;
