@@ -1,8 +1,10 @@
 {
   "name": "driver-analytics-scraper",
-  "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "start": "bun ./src/index.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -10,6 +12,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "cronbake": "^0.4.0",
     "puppeteer": "^24.31.0"
   }
 }

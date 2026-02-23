@@ -1,22 +1,39 @@
-import { scrape, type DriverAnalytics } from './scraper';
+import { redis } from 'bun';
+import Baker from 'cronbake';
 
-let promise: Promise<DriverAnalytics[]> | undefined;
+import { scrape } from './scraper';
+
+const CACHE_KEY = 'driver_analytics';
+
+const baker = Baker.create();
+
+baker.add({
+  name: 'scraper-job',
+  cron: '@every_4_hours',
+  immediate: true,
+  callback: async () => {
+    const analytics = await scrape();
+    await redis.set(CACHE_KEY, JSON.stringify(analytics));    
+  },
+});
+
+baker.bake('scraper-job');
 
 Bun.serve({
   port: 8080,
-  idleTimeout: 255,
   routes: {
     '/api/scrape': async () => {
       try {
-        if (!promise) {
-          promise = scrape().finally(() => {
-            promise = undefined;
+        const cached = await redis.get(CACHE_KEY);
+
+        if (!cached) {
+          return new Response(JSON.stringify({ error: 'No data in cache' }), {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
           });
         }
 
-        const drivers = await promise;
-
-        return new Response(JSON.stringify(drivers), {
+        return new Response(cached, {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
