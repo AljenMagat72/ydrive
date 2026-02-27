@@ -3,9 +3,7 @@
 namespace App\Services;
 
 use App\Models\Driver;
-use App\Models\DriverDelinquentPeriod;
 use App\Models\SMSCode;
-use Illuminate\Support\Carbon;
 
 class DriverService
 {
@@ -79,7 +77,7 @@ class DriverService
       ]
     );
   }
-  
+
   public function generateSMSCode(Driver $driver)
   {
     SMSCode::create([
@@ -144,11 +142,6 @@ class DriverService
       'is_delinquent' => true,
     ]);
 
-    DriverDelinquentPeriod::create([
-      'driver_id' => $driver->id,
-      'started_at' => now(),
-    ]);
-
     Log::info("Adding $driver->first_name ($driver->autofleet_driver_id) to delinquents");
 
     if ($noOppsId === null)
@@ -164,14 +157,7 @@ class DriverService
       'is_delinquent' => false,
     ]);
 
-    DriverDelinquentPeriod::where('driver_id', $driver->id)
-      ->whereNull('ended_at')
-      ->update(['ended_at' => now()]);
-
     $vendorId = $driver->vendor->vendor_id;
-
-    //TODO: update driver vendor id
-    Log::info("Removing $driver->first_name ($driver->autofleet_driver_id) from delinquents");
   }
 
   function isValidCanadianPhoneNumber(string $phone): bool

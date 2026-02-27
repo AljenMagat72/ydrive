@@ -16,46 +16,54 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string $first_name
  * @property string $last_name
  * @property string|null $avatar
- * @property string|null $city_id
+ * @property string $city_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property string|null $phone_number
- * @property int $is_delinquent
- * @property int $prevent_delinquency
- * @property int|null $minimum_schedule_hours
- * @property int $consecutive_delinquent_weeks
- * @property string|null $vendor_id
- * @property string|null $original_vendor_id
- * @property int $is_active
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\DriverDelinquentPeriod> $deliquentPeriods
- * @property-read int|null $deliquent_periods_count
+ * @property bool $is_delinquent
+ * @property bool $is_active
+ * @property float|null $weekly_acceptance_rate
+ * @property numeric|null $minimum_scheduled_hours
+ * @property float|null $minimum_acceptance_rate
+ * @property int|null $vendor_list_id
+ * @property int|null $acceptance_rate
+ * @property int $acceptance_rate_needed
+ * @property int $rejected_offers
+ * @property int $expired_offers
+ * @property string|null $zoho_id
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read int|null $notifications_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\DriverSchedule> $schedules
  * @property-read int|null $schedules_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read int|null $tokens_count
- *
+ * @property-read \App\Models\VendorList|null $vendor
+ * @method static Builder<static>|Driver belowAcceptanceRate()
+ * @method static \Database\Factories\DriverFactory factory($count = null, $state = [])
  * @method static Builder<static>|Driver newModelQuery()
  * @method static Builder<static>|Driver newQuery()
  * @method static Builder<static>|Driver query()
  * @method static Builder<static>|Driver underHoursForRange(\Illuminate\Support\Carbon $rangeStart, \Illuminate\Support\Carbon $rangeEnd)
+ * @method static Builder<static>|Driver whereAcceptanceRate($value)
+ * @method static Builder<static>|Driver whereAcceptanceRateNeeded($value)
  * @method static Builder<static>|Driver whereAutofleetDriverId($value)
  * @method static Builder<static>|Driver whereAvatar($value)
  * @method static Builder<static>|Driver whereCityId($value)
- * @method static Builder<static>|Driver whereConsecutiveDelinquentWeeks($value)
  * @method static Builder<static>|Driver whereCreatedAt($value)
+ * @method static Builder<static>|Driver whereExpiredOffers($value)
  * @method static Builder<static>|Driver whereFirstName($value)
  * @method static Builder<static>|Driver whereId($value)
  * @method static Builder<static>|Driver whereIsActive($value)
  * @method static Builder<static>|Driver whereIsDelinquent($value)
  * @method static Builder<static>|Driver whereLastName($value)
- * @method static Builder<static>|Driver whereOriginalVendorId($value)
+ * @method static Builder<static>|Driver whereMinimumAcceptanceRate($value)
+ * @method static Builder<static>|Driver whereMinimumScheduledHours($value)
  * @method static Builder<static>|Driver wherePhoneNumber($value)
- * @method static Builder<static>|Driver wherePreventDelinquency($value)
+ * @method static Builder<static>|Driver whereRejectedOffers($value)
  * @method static Builder<static>|Driver whereUpdatedAt($value)
- * @method static Builder<static>|Driver whereVendorId($value)
- *
+ * @method static Builder<static>|Driver whereVendorListId($value)
+ * @method static Builder<static>|Driver whereWeeklyAcceptanceRate($value)
+ * @method static Builder<static>|Driver whereZohoId($value)
  * @mixin \Eloquent
  */
 class Driver extends User
@@ -143,17 +151,6 @@ class Driver extends User
   public function schedules()
   {
     return $this->hasMany(DriverSchedule::class);
-  }
-
-  public function deliquentPeriods()
-  {
-    return $this->hasMany(DriverDelinquentPeriod::class);
-  }
-
-  public function currentDelinquentPeriod()
-  {
-    return $this->hasOne(DriverDelinquentPeriod::class)
-      ->whereNull('ended_at');
   }
 
   public function vendor()

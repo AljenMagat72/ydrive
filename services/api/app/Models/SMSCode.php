@@ -5,11 +5,9 @@ namespace App\Models;
 use App\Notifications\LoginCodeNotification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Config;
+
 
 /**
- * 
- *
  * @property int $id
  * @property int $driver_id
  * @property string $code
