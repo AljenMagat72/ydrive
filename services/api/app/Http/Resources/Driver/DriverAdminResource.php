@@ -38,6 +38,7 @@ class DriverAdminResource extends JsonResource
         return [
             'id' => $this->id,
             'autofleetDriverId' => $this->autofleet_driver_id,
+            'zodo_id' => $this->zoho_id,
             'firstName' => $this->first_name,
             'lastName' => $this->last_name,
             'phoneNumber' => $this->phone_number,

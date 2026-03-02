@@ -65,6 +65,15 @@ const toggleMenu = (menu: string) => {
         </NuxtLink>
       </div>
 
+      <div v-if="openMenu === 'drivers'" class="flex flex-col">
+        <NuxtLink
+          to="/driver/documents"
+          class="flex items-center pl-15 py-2.5 cursor-pointer font-semibold text-sm text-lg leading-5 color-blue rounded hover:bg-ydrive-blue hover:text-white dark:text-white/80"
+        >
+          Documents
+        </NuxtLink>
+      </div>
+
       <div v-if="openMenu === 'drivers'" class="flex flex-col hidden">
         <NuxtLink
           to="/driver/no-opps"

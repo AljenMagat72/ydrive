@@ -13,6 +13,7 @@ import {
   Sun,
   User,
   X,
+  FileText
 } from "lucide-vue-next";
 import { ref, computed } from "vue";
 const colorMode = useColorMode();
@@ -273,6 +274,15 @@ const toggleTheme = () => {
         >
           <Clock :size="18" class="mr-2" />
           Schedule
+        </NuxtLink>
+      </div>
+      <div v-if="openMenu === 'drivers'" class="flex flex-col">
+        <NuxtLink
+          to="/driver/documents"
+          class="flex items-center pl-12 py-2.5 cursor-pointer font-semibold text-sm md:text-lg leading-5 color-blue rounded hover:bg-ydrive-blue hover:text-white dark:text-white/70"
+        >
+          <FileText :size="18" class="mr-2" />
+          Documents
         </NuxtLink>
       </div>
 
