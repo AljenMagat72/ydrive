@@ -32,6 +32,7 @@ Route::prefix('v1')->middleware(['throttle:global'])->group(function () {
     // DRIVER Routes
     Route::prefix('driver')->middleware(['auth:sanctum', 'abilities:driver.portal'])->group(function () {
         Route::get('/me', [DriverAuthController::class, 'me'])->middleware(['throttle:sms'])->middleware(['auth:sanctum']);
+        Route::get('/test/{driver}', [DriverAuthController::class, 'read'])->middleware(['auth:sanctum'])->middleware(['can:read,driver']);
 
         Route::prefix('schedule')->group(function () {
             Route::get('/weekly', [DriverScheduleController::class, 'weekly']);

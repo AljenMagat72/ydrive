@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Models\User;
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -31,7 +30,7 @@ class AuthController
 
         $credentials = $request->validated();
 
-        $user = User::where('email', $credentials['email'])->first();
+        $user = Admin::where('email', $credentials['email'])->first();
 
         $token = $user->createToken('auth_token', ['admin.portal'])->plainTextToken;
 

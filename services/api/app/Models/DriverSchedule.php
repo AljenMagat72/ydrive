@@ -24,6 +24,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DriverSchedule whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DriverSchedule whereStartsAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DriverSchedule whereUpdatedAt($value)
+ * @property string $uuid
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DriverSchedule whereUuid($value)
  * @mixin \Eloquent
  */
 class DriverSchedule extends Model

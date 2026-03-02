@@ -22,6 +22,10 @@ class HandleAdminKey
             abort(404, 'Not found');
         }
 
+        if ($request->header('X-Admin-Key') === config('app.admin_key')) {
+            $request->attributes->set('is_admin', true);
+        }
+
         return $next($request);
     }
 }

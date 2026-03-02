@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Driver;
+use App\Policies\DriverPolicy;
 use App\Services\AutoFleetService;
 use App\Services\DriverService;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -26,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
    */
   public function boot(): void
   {
-    //URL::forceScheme('https');
+    Gate::policy(Driver::class, DriverPolicy::class);
 
     RateLimiter::for(
       'global', 

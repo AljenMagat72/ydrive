@@ -5,11 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegistrationRequest;
 use App\Models\RegistrationToken;
-use App\Models\User;
+use App\Models\Admin;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rules;
-use Illuminate\Validation\Rule;
 
 class RegisteredUserController extends Controller
 {
@@ -34,7 +32,7 @@ class RegisteredUserController extends Controller
             ], 401);
         }
 
-        $user = User::create($data['form']);
+        $user = Admin::create($data['form']);
 
         $user->email_verified_at = now();
         $user->save();

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\UserType;
+use Auth;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User;
@@ -64,9 +66,11 @@ use Laravel\Sanctum\HasApiTokens;
  * @method static Builder<static>|Driver whereVendorListId($value)
  * @method static Builder<static>|Driver whereWeeklyAcceptanceRate($value)
  * @method static Builder<static>|Driver whereZohoId($value)
+ * @property string $uuid
+ * @method static Builder<static>|Driver whereUuid($value)
  * @mixin \Eloquent
  */
-class Driver extends User
+class Driver extends BaseUser
 {
   use HasApiTokens, HasFactory, Notifiable;
 
@@ -90,6 +94,11 @@ class Driver extends User
       ->where('city_id', $cityId)
       ->belowAcceptanceRate()
       ->get();
+  }
+
+  public function type(): UserType
+  {
+    return UserType::DRIVER;
   }
 
   protected $fillable = [

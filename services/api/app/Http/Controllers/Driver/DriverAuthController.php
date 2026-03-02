@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\DriverLoginRequest;
 use App\Http\Requests\Auth\DriverVerifyRequest;
 use App\Http\Resources\Driver\DriverResource;
+use App\Models\Admin;
+use App\Models\Driver;
 use App\Services\DriverService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -75,6 +77,15 @@ class DriverAuthController extends Controller
         'user' => new DriverResource($request->user()),
       ]);
     }
+  }
+
+  public function read(Driver $driver) {
+
+
+    return response()->json([
+        'success' => true,
+        'user' => new DriverResource($driver),
+      ]);
   }
 
   public function resend(Request $request): JsonResponse

@@ -2,9 +2,10 @@
 
 namespace App\Http\Requests\Auth;
 
+use Hash;
+use App\Models\Admin;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Auth\Events\Lockout;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -25,7 +26,7 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules =  [
+        $rules = [
             'email' => 'required|email',
             'password' => 'required|string|min:6',
         ];
@@ -61,7 +62,9 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $admin = Admin::where('email', $this->string('email'))->first();
+
+        if (!$admin || !Hash::check($this->string('password'), $admin->password)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -79,7 +82,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 

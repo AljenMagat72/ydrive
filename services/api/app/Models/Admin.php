@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use App\Enums\Role;
+use App\Enums\UserType;
+use App\Models\BaseUser;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -19,9 +20,29 @@ use Laravel\Sanctum\HasApiTokens;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User query()
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property string $password
+ * @property string|null $remember_token
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string $uuid
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereEmail($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereEmailVerifiedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin wherePassword($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereRememberToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereRole($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereUuid($value)
  * @mixin \Eloquent
  */
-class User extends Authenticatable implements MustVerifyEmail
+
+class Admin extends BaseUser implements MustVerifyEmail
 {
     use HasFactory, Notifiable, HasApiTokens;
 
@@ -61,4 +82,8 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $attributes = [
         'role' => 'admin',
     ];
+
+    public function type(): UserType {
+        return UserType::ADMIN;
+    }
 }
