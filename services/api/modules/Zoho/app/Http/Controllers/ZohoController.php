@@ -4,10 +4,9 @@ namespace Modules\Zoho\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 use Modules\Zoho\Services\ZohoService;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ZohoController extends Controller
 {
@@ -23,7 +22,7 @@ class ZohoController extends Controller
      */
     private function getZohoId(Request $request)
     {
-    return $request->user()->zoho_id;
+        return $request->user()->zoho_id;
     }
 
     public function show(Request $request): JsonResponse
@@ -67,7 +66,7 @@ class ZohoController extends Controller
                     'Insurance_Exp'      => $z['Insurance_Exp'] ?? null,
                     'Registration_Exp'   => $z['Registration_Exp'] ?? null,
                     'Safety_Exp'         => $z['Safety_Exp'] ?? null,
-
+                    
                     // Document File IDs
                     'Vehicle_Safety'     => $z['Vehicle_Safety'] ?? null,
                     'Insurance_Photo'    => $z['Insurance_Photo'] ?? null,
@@ -84,37 +83,51 @@ class ZohoController extends Controller
         }
     }
 
+public function updateDocument(Request $request): JsonResponse
+{
+    try {
+        $zohoId = $this->getZohoId($request);
+        $file = $request->file('document');
+        $fieldName = $request->input('document_type');
+
+        if (!$zohoId || !$file || !$fieldName) {
+            return response()->json(['success' => false, 'message' => 'Missing data.'], 400);
+        }
+
+        $targetFile = is_array($file) ? $file[0] : $file;
+
+        $result = $this->zoho->uploadToFileField($zohoId, $fieldName, $targetFile);
+
+        if ($result['success']) {
+            $this->zoho->updateContact($zohoId, ['Tag' => [['name' => 'needs update']]]);
+            
+            return response()->json([
+                'success' => true, 
+                'message' => "Successfully updated $fieldName."
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => $result['message']], 400);
+
+    } catch (\Exception $e) {
+        Log::error("Zoho Controller 500: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        return response()->json([
+            'success' => false, 
+            'message' => 'Server Error: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
     public function viewAttachment(Request $request, string $fileId)
     {
         $contactId = $this->getZohoId($request);
-
-        if (!$contactId) {
-            return response()->json(['error' => 'No Zoho ID linked to user'], 403);
-        }
+        if (!$contactId) return response()->json(['error' => 'No Zoho ID'], 403);
 
         $file = $this->zoho->downloadFileField($contactId, $fileId);
-        
-        if (!$file || empty($file['content'])) {
-            return response()->json([
-                'error' => 'File content is empty or not found',
-                'file_id' => $fileId
-            ], 404);
-        }
+        if (!$file || empty($file['content'])) return response()->json(['error' => 'Not found'], 404);
 
         return response($file['content'], 200)
             ->header('Content-Type', $file['type'] ?? 'image/jpeg')
-            ->header('Cache-Control', 'public, max-age=86400')
             ->header('Content-Disposition', 'inline; filename="attachment"');
-    }
-
-    public function getDocuments(Request $request)
-    {
-        $zohoId = $this->getZohoId($request);
-
-        if (!$zohoId) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-        }
-
-        return $this->zoho->getAttachments($zohoId);
     }
 }

@@ -30,7 +30,7 @@ const isLoading = ref<boolean>(false);
 
 export function useZoho() {
   const { user } = useAuth();
-  const { get } = useAPI();
+  const { get, post } = useAPI();
   const authToken = useAuthToken();
 
   async function fetchZohoDetails() {
@@ -81,6 +81,26 @@ export function useZoho() {
     }
   }
 
+  async function uploadDocuments(files: File[], documentType: string = 'General Document') {
+    if (!files.length) return;
+
+    const formData = new FormData();
+    
+    formData.append('document_type', documentType);
+    
+    files.forEach((file) => {
+      formData.append('document[]', file);
+    });
+
+    try {
+      const response = await post('/api/zoho/update-document', formData);
+      return response;
+    } catch (error: any) {
+      console.error(`Upload Error (${documentType}):`, error);
+      throw error;
+    }
+  }
+
   async function logout() {
     driverDetails.value = null;
   }
@@ -91,6 +111,7 @@ export function useZoho() {
     fetchZohoDetails,
     fetchSecureImage,
     viewAttachment,
+    uploadDocuments,
     logout,
     
     // --- Identification & Personal ---

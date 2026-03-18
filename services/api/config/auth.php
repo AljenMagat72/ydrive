@@ -15,7 +15,7 @@ return [
 
     'sanctum' => [
       'driver' => 'sanctum',
-      'provider' => 'admins', // sanctum will use this to resolve the model
+      'provider' => null,
     ],
   ],
 

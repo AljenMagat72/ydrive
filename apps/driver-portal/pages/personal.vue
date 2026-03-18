@@ -63,10 +63,6 @@ watch(() => user.value?.zoho_id, (newId) => {
 </script>
 
 <template>
-  <div class="text-white bg-gray-800 p-2 text-xs rounded mb-4">
-  Current City: "{{ driverCity }}" | 
-  Hide Safety? {{ !showVehicleSafety }}
-</div>
   <div class="flex flex-col gap-y-12 p-8 min-h-screen">
     <div class="flex justify-center w-full">
       <div class="sm:hidden w-full px-4">

@@ -1,21 +1,25 @@
 <script setup lang="ts">
 import { useZoho } from '#imports';
-import { Car } from 'lucide-vue-next';
+import { Camera, CheckCircle2, AlertCircle, X, Upload } from 'lucide-vue-next';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 
 const props = defineProps<{
   details: any
 }>()
 
-const { make, model, year, fetchSecureImage } = useZoho();
+const { fullName, fetchSecureImage, uploadDocuments, refresh } = useZoho();
 
-const carAttachmentId = computed<string | null>(() => {
-  const doc = props.details?.Car_Photo;
-  
+const fileInput = ref<HTMLInputElement | null>(null);
+const isUploading = ref(false);
+const showToast = ref(false);
+const toastMessage = ref('');
+const toastType = ref<'success' | 'error'>('success');
+
+const carPhotoId = computed<string | null>(() => {
+  const doc = props.details?.Car_Photo; 
   if (Array.isArray(doc) && doc.length > 0) {
     return doc[0].File_Id__s || doc[0].id || null;
   }
-  
   return typeof doc === 'string' ? doc : null;
 });
 
@@ -24,25 +28,24 @@ const imageBlobUrl = ref<string | null>(null);
 const isModalOpen = ref(false);
 
 const loadImage = async () => {
-  if (!carAttachmentId.value) {
+  if (!carPhotoId.value) {
     imageLoaded.value = true;
     return;
   }
   
   imageLoaded.value = false;
   try {
-    const url = await fetchSecureImage(carAttachmentId.value as string);
-    if (url) {
-      imageBlobUrl.value = url;
-    }
+    if (imageBlobUrl.value) URL.revokeObjectURL(imageBlobUrl.value);
+    const url = await fetchSecureImage(carPhotoId.value as string);
+    if (url) imageBlobUrl.value = url;
   } catch (err) {
-    console.error("Car Photo Load Error:", err);
+    console.error("Car Photo Image Load Error:", err);
   } finally {
     imageLoaded.value = true;
   }
 };
 
-watch(() => carAttachmentId.value, (newId) => {
+watch(() => carPhotoId.value, (newId) => {
   if (newId) loadImage();
   else imageLoaded.value = true;
 }, { immediate: true });
@@ -55,88 +58,136 @@ const toggleModal = () => {
   if (imageBlobUrl.value) isModalOpen.value = !isModalOpen.value;
 }
 
-watch(isModalOpen, (isOpen) => {
-  document.body.style.overflow = isOpen ? 'hidden' : '';
-});
+const triggerUpload = () => {
+  if (!isUploading.value) fileInput.value?.click();
+};
 
-const sendEmail = () => {
-  const email = 'mary@ydrive.com';
-  const subject = encodeURIComponent(`Car Details Update Request - ${props.details?.Full_Name || 'Driver'}`);
-  let bodyText = `Hello,\n\nI would like to request a Car Details update.\n\nDriver Name: ${props.details?.Full_Name}\nCar: ${make.value} ${model.value} (${year.value})`;
-  window.location.href = `mailto:${email}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+const triggerToast = (msg: string, type: 'success' | 'error' = 'success') => {
+  toastMessage.value = msg;
+  toastType.value = type;
+  showToast.value = true;
+  setTimeout(() => showToast.value = false, 4000);
+};
+
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (!target.files?.length) return;
+
+  const rawFiles = Array.from(target.files);
+  isUploading.value = true;
+
+  const today = new Date().toISOString().split('T')[0];
+  const sanitizedName = (fullName.value || 'Unknown_Driver')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_]/g, '');
+
+  const renamedFiles = rawFiles.map((file, index) => {
+    const extension = file.name.split('.').pop();
+    const suffix = rawFiles.length > 1 ? `_${index + 1}` : '';
+    const newFileName = `CarPhoto_${sanitizedName}_${today}${suffix}.${extension}`;
+    return new File([file], newFileName, { type: file.type });
+  });
+
+  try {
+    await uploadDocuments(renamedFiles, 'TBU_Car_Photo'); 
+    triggerToast('Car photo uploaded successfully!', 'success');
+    if (refresh) await refresh();
+  } catch (err: any) {
+    triggerToast(err.data?.message || 'Upload failed.', 'error');
+  } finally {
+    isUploading.value = false;
+    if (target) target.value = '';
+  }
 };
 </script>
 
 <template>
-  <div class="bg-black border border-gray-800 rounded-2xl p-6 flex flex-col gap-y-4 w-full max-w-sm shadow-blue h-full">
+  <div class="bg-black border border-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-blue h-full relative">
     
+    <input 
+      type="file" 
+      ref="fileInput" 
+      class="hidden" 
+      accept="image/*" 
+      @change="handleFileUpload" 
+    />
+
     <div class="flex items-center justify-center w-full gap-2">
       <div class="bg-blue-600/20 p-1.5 rounded-lg shrink-0">
-        <Car class="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+        <Camera class="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
       </div>
-      <span class="text-lg sm:text-xl font-semibold tracking-tight text-white truncate">Car Photo</span>
+      <span class="text-lg sm:text-xl font-semibold tracking-tight text-white truncate">Vehicle Photo</span>
     </div>
 
     <div class="flex flex-col gap-6 mt-2">
       <div class="relative mx-auto w-full sm:w-48 h-32 shrink-0 border-2 border-dashed border-gray-700 rounded-xl flex items-center justify-center bg-gray-900/50 overflow-hidden group">
-        
-        <div v-if="carAttachmentId && !imageLoaded" class="absolute inset-0 flex items-center justify-center bg-gray-900/80 z-10">
+        <div v-if="carPhotoId && !imageLoaded" class="absolute inset-0 flex items-center justify-center bg-gray-900/80 z-10">
           <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
-
+        
         <img 
           v-if="imageBlobUrl"
           :src="imageBlobUrl"
           @click="toggleModal"
           @load="imageLoaded = true"
           v-show="imageLoaded"
-          class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105" 
+          class="w-full h-full object-contain cursor-pointer transition-transform duration-300 group-hover:scale-105" 
         />
-        
-        <div 
-          v-if="imageBlobUrl && imageLoaded" 
-          @click="toggleModal"
-          class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-        >
-          <span class="text-white text-[10px] font-bold uppercase tracking-widest text-center px-2">View Car</span>
-        </div>
-
-        <div v-else-if="!carAttachmentId" class="text-gray-600 text-[10px] text-center uppercase font-bold tracking-widest px-4">
+        <div v-else-if="!carPhotoId" class="text-gray-600 text-[10px] text-center uppercase font-bold tracking-widest px-4">
           No Photo on File
         </div>
       </div>
 
-      <div class="flex flex-col justify-top space-y-2 w-full flex-grow">
-        <div class="space-y-1">
-          <p class="text-white text-sm flex justify-between gap-2">
-            <span class="font-semibold text-white">Make:</span> 
-            <span>{{ make || 'N/A' }}</span>
-          </p>
-          <p class="text-white text-sm flex justify-between gap-2">
-            <span class="font-semibold text-white">Model:</span> 
-            <span>{{ model || 'N/A' }}</span>
-          </p>
-          <p class="text-white text-sm flex justify-between gap-2">
-            <span class="font-semibold text-white">Year:</span> 
-            <span>{{ year || 'N/A' }}</span>
-          </p>
-        </div>
+      <div class="flex flex-col justify-top space-y-1 w-full flex-grow">
+        <p class="text-white text-sm flex justify-between gap-2">
+          <span class="font-semibold text-gray-400">Make:</span> 
+          <span>Geely</span>
+        </p>
+        <p class="text-white text-sm flex justify-between gap-2">
+          <span class="font-semibold text-gray-400">Model:</span> 
+          <span>Okavango</span>
+        </p>
+        <p class="text-white text-sm flex justify-between gap-2">
+          <span class="font-semibold text-gray-400">Year:</span> 
+          <span>2022</span>
+        </p>
+      </div>
+      
+      <div class="flex flex-col mt-auto">
+        <button 
+          @click="triggerUpload" 
+          :disabled="isUploading"
+          class="mt-2 w-full font-semibold py-2.5 px-6 rounded-full transition-all duration-200 flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 active:scale-95 shadow-lg shadow-blue-600/20 disabled:bg-gray-800 disabled:text-blue-500/50 disabled:cursor-not-allowed disabled:border disabled:border-blue-500/30"
+        >
+          <span v-if="isUploading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          <template v-else>
+            <Upload class="w-4 h-4" />
+            <span>Upload New Car Photo</span>
+          </template>
+        </button>
+        <p class="text-[10px] text-gray-500 text-center uppercase tracking-widest mt-2">
+          for Admin Verification
+        </p>
       </div>
     </div>
 
-    <div class="flex flex-col mt-auto">
-      <button @click="sendEmail" class="mt-2 w-full sm:w-auto bg-white text-black font-semibold py-2 px-6 rounded-full hover:text-white hover:bg-blue-600 transition-colors">
-        Request Update
-      </button>
-    </div>
-
     <Teleport to="body">
+       <Transition enter-active-class="transform transition duration-500 ease-out" enter-from-class="translate-x-20 opacity-0 scale-95" enter-to-class="translate-x-0 opacity-100 scale-100" leave-active-class="transition duration-300 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+        <div v-if="showToast" class="fixed top-6 right-6 z-[200] flex items-center gap-3 px-6 py-4 rounded-2xl border shadow-2xl min-w-[320px] backdrop-blur-md" :class="toastType === 'success' ? 'bg-green-600/90 border-green-400 text-white' : 'bg-red-600/90 border-red-400 text-white'">
+          <CheckCircle2 v-if="toastType === 'success'" class="w-5 h-5 text-white" />
+          <AlertCircle v-else class="w-5 h-5 text-white" />
+          <span class="text-sm font-semibold">{{ toastMessage }}</span>
+          <button @click="showToast = false" class="ml-auto p-1.5 hover:bg-white/10 rounded-full transition-colors">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+      </Transition>
+
       <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="isModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 md:p-10" @click="toggleModal">
-          <button class="absolute top-6 right-6 text-white/70 hover:text-white transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <button class="absolute top-6 right-6 text-white/50 hover:text-white transition-colors">
+            <X class="w-8 h-8" />
           </button>
           <img v-if="imageBlobUrl" :src="imageBlobUrl" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg border border-white/10" @click.stop />
         </div>
