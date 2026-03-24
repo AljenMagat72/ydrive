@@ -62,8 +62,8 @@ class AutoFleetWebHookController extends Controller
             'is_delinquent'           => false,
             'prevent_delinquency'     => false,
             'acceptance_rate'         => 0,
-            'acceptance_rate_needed'  => 0,
-            'minimum_scheduled_hours' => 0,
+            'acceptance_rate_needed'  => 70,
+            'minimum_scheduled_hours' => 15,
             'rejected_offers'         => 0,
             'expired_offers'          => 0,
         ]
