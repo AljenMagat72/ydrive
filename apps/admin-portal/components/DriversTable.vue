@@ -155,7 +155,7 @@ const totalPages = computed(() =>
 );
 
 const paginatedDrivers = computed(() => {
-  const start = (currentPage.value - 1) * 20;
+  const start = (currentPage.value - 1) * itemsPerPage.value;
   const end = start + itemsPerPage.value;
   return filteredDrivers.value.slice(start, end);
 });
