@@ -7,6 +7,12 @@ import {
   X,
   Download,
 } from "lucide-vue-next";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "~/components/ui/tooltip";
 import * as XLSX from 'xlsx';
 import Modal from "~/components/Modal.vue";
 import {
@@ -66,6 +72,7 @@ watch(
       firstName: d.firstName ?? "",
       lastName: d.lastName ?? "",
       name: `${d.firstName ?? ""} ${d.lastName ?? ""}`,
+      mobile: d.phoneNumber ?? "",
       schedule: d.hasCurrentSchedule ?? false,
       nextSchedule: d.hasNextSchedule ?? false,
       acceptance: d.acceptanceRate ?? 0,
@@ -539,12 +546,31 @@ function exportToExcel() {
                 @click.stop="handleShowUpdateModal(driver)"
               />
 
-              <span
-                class="dark:text-white/70 block truncate max-w-full relative z-10"
-                :title="driver.name"
-              >
-                {{ driver.name }}
-              </span>
+              <TooltipProvider :delay-duration="0">
+                <Tooltip>
+                  <TooltipTrigger as-child>
+                    <span class="dark:text-white/70 block truncate max-w-full cursor-default">
+                      {{ driver.name }}
+                    </span>
+                  </TooltipTrigger>
+                  
+                  <TooltipContent :side-offset="-10" class="bg-foreground text-background border-none shadow-xl z-[9999]">
+                    <div class="space-y-1 p-1">
+                      <p class="font-medium">
+                        {{ driver.name }}
+                        <a 
+                          v-if="driver.mobile" 
+                          :href="`tel:+${driver.mobile}`" 
+                          class="underline ml-1"
+                          @click.stop
+                        >
+                          - {{ driver.mobile }}
+                        </a>
+                      </p>
+                      </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               <div
                 v-if="showUpdateForm && selectedDriverId === driver.id && selectedDriver"
