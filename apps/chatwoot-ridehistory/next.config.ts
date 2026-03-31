@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  /* config options here */
+  allowedDevOrigins: ['laverne-recriminative-nonheroically.ngrok-free.dev'],
 };
 
 export default nextConfig;

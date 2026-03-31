@@ -193,9 +193,11 @@ function rideStateLabel(state: RideState) {
 }
 
 function rideStateBadgeClasses(state: RideState) {
-  if (state === "active") return "bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/20 border-0";
-  if (state === "completed") return "bg-sky-500/15 text-sky-200 hover:bg-sky-500/20 border-0";
-  return "bg-zinc-500/15 text-zinc-200 hover:bg-zinc-500/20 border-0";
+  if (state === "active")
+    return "border-0 bg-emerald-400/25 font-semibold text-emerald-50 shadow-[0_0_24px_rgba(52,211,153,0.25)] hover:bg-emerald-400/35";
+  if (state === "completed")
+    return "border-0 bg-sky-400/25 font-semibold text-sky-50 shadow-[0_0_24px_rgba(56,189,248,0.2)] hover:bg-sky-400/35";
+  return "border-0 bg-violet-400/25 font-semibold text-violet-50 hover:bg-violet-400/35";
 }
 
 function buildStripePaymentUrl(ride: Ride) {
@@ -228,10 +230,10 @@ function StopDot({
 
   const tones =
     variant === "pickup"
-      ? "text-emerald-300 hover:text-emerald-200"
+      ? "text-emerald-200 hover:text-emerald-100"
       : variant === "dropoff"
-        ? "text-red-300 hover:text-red-200"
-        : "text-amber-300 hover:text-amber-200";
+        ? "text-rose-200 hover:text-rose-100"
+        : "text-amber-200 hover:text-amber-100";
 
   return (
     <Tooltip>
@@ -239,7 +241,7 @@ function StopDot({
         <button
           type="button"
           className={cn(
-            "grid h-7 w-7 place-items-center rounded-md bg-transparent transition-colors hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 md:h-8 md:w-8",
+            "grid h-7 w-7 place-items-center rounded-md border-0 bg-transparent transition-colors hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 md:h-8 md:w-8",
             tones,
           )}
           aria-label={tooltipTitle}
@@ -247,10 +249,15 @@ function StopDot({
           {icon}
         </button>
       </TooltipTrigger>
-      <TooltipContent sideOffset={6} className="max-w-[360px] border-white/15 bg-zinc-900 text-zinc-100 shadow-[0_12px_50px_rgba(0,0,0,0.75)]">
-        <div className="space-y-1">
-          <div className="text-sm font-medium text-zinc-50">{tooltipTitle}</div>
-          {tooltipDescription ? <div className="text-xs text-zinc-300">{tooltipDescription}</div> : null}
+      <TooltipContent
+        sideOffset={6}
+        className="max-w-[360px] flex flex-col items-start gap-0 border-0 bg-zinc-900 p-3 text-base text-white shadow-[0_12px_50px_rgba(0,0,0,0.75)]"
+      >
+        <div className="space-y-2">
+          <div className="text-lg font-semibold leading-snug text-white">{tooltipTitle}</div>
+          {tooltipDescription ? (
+            <div className="text-base font-semibold leading-snug text-white/90">{tooltipDescription}</div>
+          ) : null}
         </div>
       </TooltipContent>
     </Tooltip>
@@ -263,12 +270,6 @@ function stopVariant(idx: number, total: number): "pickup" | "dropoff" | "mid" {
   return "mid";
 }
 
-function stopDotClass(variant: "pickup" | "dropoff" | "mid") {
-  if (variant === "pickup") return "bg-emerald-500/15 text-emerald-100 ring-emerald-400/25";
-  if (variant === "dropoff") return "bg-red-500/15 text-red-100 ring-red-400/25";
-  return "bg-amber-400/15 text-amber-100 ring-amber-300/25";
-}
-
 function DriverHover({ ride }: { ride: Ride }) {
   const name = [ride.driver?.firstName, ride.driver?.lastName].filter(Boolean).join(" ").trim() || "—";
   const phone = ride.driver?.phoneNumber || "";
@@ -277,27 +278,28 @@ function DriverHover({ ride }: { ride: Ride }) {
   return (
     <HoverCard openDelay={150} closeDelay={80}>
       <HoverCardTrigger asChild>
-        <span className={cn("inline-flex items-center gap-1.5", phone ? "cursor-pointer text-zinc-50" : "text-zinc-200")}>
-          <span className="font-medium">{name}</span>
-          {phone ? <span className="text-xs text-zinc-400">(hover)</span> : null}
+        <span className={cn("inline-flex items-center gap-1.5", phone ? "cursor-pointer text-white" : "text-zinc-100")}>
+          <span className="font-semibold">{name}</span>  
+        
         </span>
       </HoverCardTrigger>
-      <HoverCardContent className="w-[280px] border-white/10 bg-zinc-950/95 p-3 text-zinc-100 shadow-xl">
-        <div className="space-y-1.5">
-          <div className="text-sm font-medium text-zinc-50">Driver</div>
-          <div className="text-sm text-zinc-200">{name}</div>
-          <Separator className="bg-white/10" />
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-xs text-zinc-400">Phone</div>
-            {telHref ? (
-              <a className="inline-flex items-center gap-2 text-sm text-sky-200 hover:text-sky-100" href={telHref}>
-                <Phone className="h-4 w-4" />
-                <span className="font-medium">{phone}</span>
-              </a>
-            ) : (
-              <div className="text-sm text-zinc-300">—</div>
-            )}
-          </div>
+      <HoverCardContent
+        sideOffset={6}
+        className="w-[min(100vw-2rem,360px)] max-w-[360px] border-0 bg-zinc-900 p-3 text-base text-white shadow-[0_12px_50px_rgba(0,0,0,0.75)] ring-0 outline-none"
+      >
+        <div className="space-y-2">
+          <div className="text-lg font-semibold text-white">{name}</div>
+          {telHref ? (
+            <a
+              className="inline-flex items-center gap-2 text-base font-semibold text-white/90 hover:text-white"
+              href={telHref}
+            >
+              <Phone className="h-5 w-5 shrink-0 opacity-90" />
+              <span className="break-all">{phone}</span>
+            </a>
+          ) : (
+            <div className="text-base font-medium text-white/85">—</div>
+          )}
         </div>
       </HoverCardContent>
     </HoverCard>
@@ -320,7 +322,7 @@ function RideRow({ ride }: { ride: Ride }) {
     "—";
 
   return (
-    <Card className="border-0 bg-white/[0.06] shadow-[0_8px_30px_rgba(0,0,0,0.35)] ring-1 ring-white/[0.09]">
+    <Card className="border-0 bg-white/[0.09] shadow-[0_8px_36px_rgba(0,0,0,0.28)] ring-1 ring-white/[0.14]">
       <div className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -356,18 +358,18 @@ function RideRow({ ride }: { ride: Ride }) {
 
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-2">
-                  <div className="min-w-0 w-full text-lg font-semibold tracking-tight text-zinc-50 sm:w-auto sm:flex-1">
+                  <div className="min-w-0 w-full text-xl font-bold tracking-tight text-white sm:w-auto sm:flex-1 sm:text-2xl">
                     <div className="flex flex-col gap-1.5 sm:flex-row sm:min-w-0 sm:items-center sm:gap-2">
-                      <span className="min-w-0 break-words leading-snug">
+                      <span className="min-w-0 break-words leading-snug text-white drop-shadow-[0_1px_12px_rgba(255,255,255,0.08)]">
                         {pickup?.description?.split(",")[0] ?? "Pickup"}
                       </span>
                       <ArrowRight
-                        className="hidden h-4 w-4 shrink-0 text-zinc-400 sm:block"
+                        className="hidden h-5 w-5 shrink-0 text-sky-300/90 sm:block"
                         aria-hidden
                       />
                       <span className="flex min-w-0 items-start gap-2 leading-snug sm:contents">
-                        <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400 sm:hidden" aria-hidden />
-                        <span className="min-w-0 break-words">
+                        <ArrowRight className="mt-0.5 h-5 w-5 shrink-0 text-sky-300/90 sm:hidden" aria-hidden />
+                        <span className="min-w-0 break-words text-white">
                           {dropoff?.description?.split(",")[0] ?? "Dropoff"}
                         </span>
                       </span>
@@ -375,7 +377,7 @@ function RideRow({ ride }: { ride: Ride }) {
                   </div>
                   <Badge
                     className={cn(
-                      "h-10 shrink-0 self-start rounded-full px-2.5 text-sms font-large sm:self-center",
+                      "h-10 shrink-0 self-start rounded-full px-3 text-sm sm:self-center",
                       rideStateBadgeClasses(ride.state),
                     )}
                   >
@@ -383,72 +385,45 @@ function RideRow({ ride }: { ride: Ride }) {
                   </Badge>
                 </div>
 
-                <div className="flex flex-wrap items-start gap-2">
-                  {pickup ? (
-                    <span
-                      className={cn(
-                        "inline-flex max-w-full min-w-0 items-start gap-2 rounded-2xl px-2.5 py-1.5 text-xs ring-1 sm:max-w-[min(100%,24rem)] sm:rounded-full sm:py-1",
-                        stopDotClass("pickup"),
-                      )}
-                    >
-                      <span className="min-w-0 flex-1 break-words leading-snug">{pickup.description}</span>
-                    </span>
-                  ) : null}
-                  {midStops.length ? (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
+                {midStops.length ? (
+                  <div className="flex flex-wrap items-start gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
                           variant="ghost"
-                          className="h-8 rounded-full bg-white/[0.05] px-3 text-xs text-amber-100 ring-1 ring-amber-300/20 hover:bg-white/[0.08]"
+                          className="h-7 min-h-7 cursor-pointer rounded-md border-0 bg-transparent px-2 text-sm font-medium text-amber-200 shadow-none ring-0 hover:bg-transparent hover:text-amber-100 focus-visible:ring-2 focus-visible:ring-white/30"
                         >
                           Stops +{midStops.length}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        align="start"
-                        className="w-[360px] border-white/15 bg-zinc-900 text-zinc-100 shadow-[0_12px_50px_rgba(0,0,0,0.75)]"
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        sideOffset={6}
+                        className="max-w-[360px] flex flex-col items-start gap-0 border-0 bg-zinc-900 p-3 text-base text-white shadow-[0_12px_50px_rgba(0,0,0,0.75)]"
                       >
-                        <div className="space-y-2">
-                          <div className="text-sm font-semibold text-zinc-50">Stops</div>
-                          <div className="space-y-1.5">
-                            {midStopsSorted.map((s) => {
-                              return (
-                                <div key={s.id} className="flex items-start gap-2 rounded-lg bg-white/[0.04] p-2 ring-1 ring-white/[0.06]">
-                                  <div className={cn("mt-0.5 h-2.5 w-2.5 rounded-full ring-1", stopDotClass("mid"))} />
-                                  <div className="min-w-0 flex-1">
-                                    <div className="text-xs font-medium text-zinc-200">{s.description}</div>
-                                    <div className="mt-0.5 text-[11px] text-zinc-400">{formatDateTime(bestStopTimestamp(s))}</div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                        <div className="space-y-4">
+                          {midStopsSorted.map((s) => (
+                            <div key={s.id} className="space-y-2">
+                              <div className="text-lg font-semibold leading-snug text-white">
+                                {formatDateTime(bestStopTimestamp(s))}
+                              </div>
+                              <div className="text-base font-semibold leading-snug text-white/90">{s.description}</div>
+                            </div>
+                          ))}
                         </div>
-                      </PopoverContent>
-                    </Popover>
-                  ) : null}
-                  {dropoff ? (
-                    <span
-                      className={cn(
-                        "inline-flex max-w-full min-w-0 items-start gap-2 rounded-2xl px-2.5 py-1.5 text-xs ring-1 sm:max-w-[min(100%,24rem)] sm:rounded-full sm:py-1",
-                        stopDotClass("dropoff"),
-                      )}
-                    >
-                      <span className="min-w-0 flex-1 break-words leading-snug">{dropoff.description}</span>
-                    </span>
-                  ) : null}
-                </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                ) : null}
 
-                <div className="grid gap-2 text-sm text-zinc-400 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div className="grid gap-2 text-base font-medium text-zinc-100 sm:grid-cols-[1fr_auto] sm:items-center">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                     <div className="inline-flex items-center gap-2">
-                      <span className="text-zinc-500">Driver</span>
+                      <span className="font-semibold text-zinc-200">Driver : </span>
                       <DriverHover ride={ride} />
                     </div>
                     <div className="inline-flex items-center gap-2">
-                      <span className="text-zinc-500">Vehecle Type</span>
-                      <span className="text-zinc-200">{vehicleLabel}</span>
+                      <span className="font-semibold text-zinc-200">Vehicle type : </span>
+                      <span className="font-semibold text-white">{vehicleLabel}</span>
                     </div>
                     {/* {ride.payment?.paymentMethod?.name ? (
                       <div className="inline-flex items-center gap-2">
@@ -458,7 +433,7 @@ function RideRow({ ride }: { ride: Ride }) {
                     ) : null} */}
                   </div>
 
-                  <div className="text-right text-lg font-semibold tracking-tight text-zinc-50 sm:text-xl">
+                  <div className="text-right text-xl font-bold tracking-tight text-white sm:text-2xl">
                     {formatMoney(ride.priceAmount, ride.priceCurrency)}
                   </div>
                 </div>
@@ -467,15 +442,15 @@ function RideRow({ ride }: { ride: Ride }) {
           </div>
 
           <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
-            <div className="text-sm text-zinc-500">{formatDateTime(ride.createdAt)}</div>
+            <div className="text-sm font-semibold text-zinc-100">{formatDateTime(ride.createdAt)}</div>
             <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" className="h-8 px-2 text-sky-200 hover:bg-white/5 hover:text-sky-100">
+              <Button asChild variant="ghost" className="h-9 px-2 text-base font-semibold text-sky-300 hover:bg-white/10 hover:text-sky-200">
                 <a href={stripeUrl ?? "#"} target="_blank" rel="noreferrer" aria-disabled={!stripeUrl}>
                   <span>Open Payment</span>
-                  <ExternalLink className="ml-2 h-4 w-4 opacity-80" />
+                  <ExternalLink className="ml-2 h-4 w-4 opacity-90" />
                 </a>
               </Button>
-              <Button asChild variant="ghost" className="h-8 px-2 text-zinc-200 hover:bg-white/5 hover:text-zinc-50">
+              <Button asChild variant="ghost" className="h-9 px-2 text-base font-semibold text-white hover:bg-white/10 hover:text-white">
                 <a href={bookingUrl} target="_blank" rel="noreferrer">
                   <span>Open Booking</span>
                   <ExternalLink className="ml-2 h-4 w-4 opacity-80" />
@@ -486,14 +461,14 @@ function RideRow({ ride }: { ride: Ride }) {
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-3 sm:hidden">
-          <div className="text-sm text-zinc-500">{formatDateTime(ride.createdAt)}</div>
+          <div className="text-sm font-semibold text-zinc-100">{formatDateTime(ride.createdAt)}</div>
           <div className="flex items-center gap-2">
-            <Button asChild size="sm" variant="ghost" className="h-8 px-2 text-sky-200 hover:bg-white/5 hover:text-sky-100">
+            <Button asChild size="sm" variant="ghost" className="h-9 px-2 text-sm font-semibold text-sky-300 hover:bg-white/10 hover:text-sky-200">
               <a href={stripeUrl ?? "#"} target="_blank" rel="noreferrer" aria-disabled={!stripeUrl}>
                 Open Payment
               </a>
             </Button>
-            <Button asChild size="sm" variant="ghost" className="h-8 px-2 text-zinc-200 hover:bg-white/5 hover:text-zinc-50">
+            <Button asChild size="sm" variant="ghost" className="h-9 px-2 text-sm font-semibold text-white hover:bg-white/10">
               <a href={bookingUrl} target="_blank" rel="noreferrer">
                 Open Booking
               </a>
@@ -510,25 +485,25 @@ export default function Home() {
 
   return (
     <TooltipProvider delayDuration={0} skipDelayDuration={0}>
-      <div className="min-h-dvh bg-[#0B0D12] text-zinc-100">
-        <div className="w-full px-4 py-5 text-base sm:px-8 sm:py-7 sm:text-[17px]">
+      <div className="min-h-dvh bg-[#12151F] text-zinc-50">
+        <div className="w-full px-4 py-5 text-base sm:px-8 sm:py-7 sm:text-[18px]">
           <div className="sticky top-0 z-20 -mx-4 px-4 pb-3 pt-2 backdrop-blur sm:-mx-8 sm:px-8">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/[0.11] to-white/[0.04] p-5 ring-1 ring-white/[0.11] shadow-[0_10px_40px_rgba(0,0,0,0.55)] sm:p-6">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(600px_circle_at_20%_0%,rgba(56,189,248,0.18),transparent_55%),radial-gradient(500px_circle_at_90%_20%,rgba(34,197,94,0.12),transparent_55%)]" />
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/[0.16] to-white/[0.07] p-5 ring-1 ring-white/[0.18] shadow-[0_12px_48px_rgba(0,0,0,0.45)] sm:p-6">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(620px_circle_at_18%_0%,rgba(56,189,248,0.28),transparent_58%),radial-gradient(520px_circle_at_88%_18%,rgba(52,211,153,0.2),transparent_55%),radial-gradient(400px_circle_at_50%_100%,rgba(167,139,250,0.12),transparent_50%)]" />
               <div className="relative flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <div className="text-xs font-medium tracking-wide text-zinc-300/90">Ride history</div>
-                  <div className="mt-1 truncate text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
+                  <div className="text-sm font-bold uppercase tracking-[0.12em] text-sky-300">Ride history</div>
+                  <div className="mt-2 truncate text-3xl font-extrabold tracking-tight text-white drop-shadow-sm sm:text-4xl">
                     {MOCK_CLIENT.name}
                   </div>
-                  <div className="mt-1 text-sm text-zinc-300/80">Customer details</div>
+                  <div className="mt-1.5 text-base font-semibold text-zinc-100">Customer details</div>
                 </div>
                 <div className="text-right">
 
-                  <div className="mt-2 inline-flex items-center rounded-full bg-sky-500/10 px-3 py-1 text-base font-semibold text-sky-100 ring-1 ring-sky-300/20 sm:text-lg">
+                  <div className="mt-2 inline-flex items-center rounded-full bg-sky-400/25 px-3.5 py-1.5 text-lg font-bold text-white ring-1 ring-sky-300/45 shadow-[0_0_28px_rgba(56,189,248,0.25)] sm:text-xl">
                     {formatMoney(MOCK_CLIENT.lifetimeSpendCad, "CAD")}
                   </div>
-                  <div className="mt-1 text-sms text-zinc-300/70">lifetime spend</div>
+                  <div className="mt-1 text-sm font-semibold text-zinc-200">lifetime spend</div>
                 </div>
               </div>
             </div>
@@ -540,7 +515,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-6 text-center text-xs text-zinc-500">
+          <div className="mt-6 text-center text-sm font-medium text-zinc-300">
             Mock data only. Links are placeholders until API + real URLs are wired.
           </div>
         </div>
