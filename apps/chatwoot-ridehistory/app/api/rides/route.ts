@@ -8,7 +8,7 @@ type ClientRidesBody = {
 };
 
 function baseUrlFromEnv(): string | null {
-  const v = "https://api.ydriveapp.com";
+  const v = "https://y-drive-api-develop.up.railway.app";
   const u = v.trim();
   return u ? u.replace(/\/$/, "") : null;
 }
