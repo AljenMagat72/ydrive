@@ -48,8 +48,8 @@ Route::prefix('v1')->middleware(['throttle:global'])->group(function () {
         Route::post('driver/{id}/delinquent/revert', [DriverDelinquentController::class, 'revert']);
         Route::post('driver/{id}/delinquent/prevent', [DriverDelinquentController::class, 'prevent']);
 
-        Route::get('client/{id}/rides', [ClientController::class, 'rides']);
-        Route::get('client/find', [ClientController::class, 'find']);
+        Route::post('client/find', [ClientController::class, 'search']);
+        Route::get('client/{id}/rides', [ClientController::class, 'ridesById']);
     });
 
     // ADMIN Routes
@@ -64,8 +64,8 @@ Route::prefix('v1')->middleware(['throttle:global'])->group(function () {
         Route::post('driver/{id}/delinquent/revert', [DriverDelinquentController::class, 'revert']);
         Route::post('driver/{id}/delinquent/prevent', [DriverDelinquentController::class, 'prevent']);
 
-        Route::get('client/{id}/rides', [ClientController::class, 'rides']);
-        Route::get('client/find', [ClientController::class, 'find']);
+        Route::post('client/find', [ClientController::class, 'search']);
+        Route::get('client/{id}/rides', [ClientController::class, 'ridesById']);
 
         Route::delete('driver-schedule/{id}', [DriverScheduleController::class, 'deleteSplitSchedule']);
 
