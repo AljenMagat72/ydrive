@@ -17,6 +17,7 @@ Route::middleware(['auth:sanctum', 'abilities:driver.portal'])->group(function (
     Route::get('/driver-documents', [ZohoController::class, 'getDocuments']);
     Route::get('/view-attachment/{fileId}', [ZohoController::class, 'viewAttachment']);
     Route::post('/zoho/update-document', [ZohoController::class, 'updateDocument']);
+    Route::post('/zoho/update-profile', [ZohoController::class, 'updateProfile']);
 });
 
 //admin Routes

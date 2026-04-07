@@ -7,7 +7,7 @@ const props = defineProps<{
   details: any
 }>()
 
-const { fullName, fetchSecureImage, uploadDocuments, refresh } = useZoho();
+const { fullName, make, model, year, fetchSecureImage, uploadDocuments, refresh } = useZoho();
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const isUploading = ref(false);
@@ -103,7 +103,7 @@ const handleFileUpload = async (event: Event) => {
 </script>
 
 <template>
-  <div class="bg-black border border-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-blue h-full relative">
+  <div class="dark:bg-black border rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-blue h-full relative">
     
     <input 
       type="file" 
@@ -117,7 +117,7 @@ const handleFileUpload = async (event: Event) => {
       <div class="bg-blue-600/20 p-1.5 rounded-lg shrink-0">
         <Camera class="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
       </div>
-      <span class="text-lg sm:text-xl font-semibold tracking-tight text-white truncate">Vehicle Photo</span>
+      <span class="text-lg sm:text-xl font-semibold tracking-tight dark:text-white truncate">Vehicle Photo</span>
     </div>
 
     <div class="flex flex-col gap-6 mt-2">
@@ -140,17 +140,17 @@ const handleFileUpload = async (event: Event) => {
       </div>
 
       <div class="flex flex-col justify-top space-y-1 w-full flex-grow">
-        <p class="text-white text-sm flex justify-between gap-2">
-          <span class="font-semibold text-gray-400">Make:</span> 
-          <span>Geely</span>
+        <p class="text-sm flex justify-between gap-2">
+          <span class="font-semibold dark:text-black">Make:</span> 
+          <span>{{ make || '---' }}</span>
         </p>
-        <p class="text-white text-sm flex justify-between gap-2">
-          <span class="font-semibold text-gray-400">Model:</span> 
-          <span>Okavango</span>
+        <p class="flex justify-between gap-2">
+          <span class="font-semibold dark:text-black">Model:</span> 
+          <span>{{ model || '---' }}</span>
         </p>
-        <p class="text-white text-sm flex justify-between gap-2">
-          <span class="font-semibold text-gray-400">Year:</span> 
-          <span>2022</span>
+        <p class="text-sm flex justify-between gap-2">
+          <span class="font-semibold dark:text-black">Year:</span> 
+          <span>{{ year || '---' }}</span>
         </p>
       </div>
       

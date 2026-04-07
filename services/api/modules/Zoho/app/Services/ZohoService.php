@@ -199,4 +199,14 @@ public function uploadToFileField(string $recordId, string $fieldName, $file): a
         }
         return null;
     }
+
+    public function updateDriverRecord(string $zohoId, array $data): array
+    {
+        $response = Http::withToken($this->refreshToken())
+            ->put("{$this->baseUrl}/Drivers/{$zohoId}", [
+                'data' => [$data]
+            ]);
+
+        return $response->json();
+    }
 }

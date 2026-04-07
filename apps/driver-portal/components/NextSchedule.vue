@@ -415,7 +415,7 @@ const displayDailyTotal = (value: string) => {
 
 <template>
   <div
-    class="flex flex-col w-full h-auto shadow-lg rounded-xl p-3 lg:bg-white border lg:mt-10 dark:bg-[#18181b] shadow-blue"
+    class="flex flex-col w-full h-auto shadow-lg rounded-xl p-3 border lg:mt-10 dark:bg-black shadow-blue"
   >
     <!-- Success Notification -->
     <TransitionGroup name="toast" tag="div" class="fixed top-6 right-6 z-50 space-y-2">
@@ -500,7 +500,7 @@ const displayDailyTotal = (value: string) => {
 
     <!-- Days List -->
     <div
-      class="py-4 space-y-4 lg:flex gap-2 w-full lg:justify-between bg-white dark:bg-[#18181b]"
+      class="py-4 space-y-4 lg:flex gap-2 w-full lg:justify-between dark:bg-black"
     >
       <div
         v-for="day in week"
@@ -509,7 +509,7 @@ const displayDailyTotal = (value: string) => {
       >
         <!-- Day Header -->
         <div
-          class="flex justify-between rounded-xl shadow-lg items-center px-2 py-1 cursor-pointer color-blue dark:bg-gray-900 dark:text-gray-300 bg-white shadow-lg border"
+          class="flex justify-between rounded-xl shadow-lg items-center px-2 py-1 cursor-pointer color-blue shadow-lg border"
         >
           <!-- Day Name on the left -->
           <div class="flex gap-2 place-items-center w-full">

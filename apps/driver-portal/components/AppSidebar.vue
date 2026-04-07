@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Calendar, CalendarClock, CalendarPlus, ChevronRight, LogOut, User } from 'lucide-vue-next';
-import { useAuth, useRuntimeConfig } from '#imports';
+import { Calendar, CalendarClock, CalendarPlus, ChevronRight, LogOut, User, Moon, 
+  Sun } from 'lucide-vue-next';
+import { useAuth, useRuntimeConfig, useColorMode } from '#imports';
 import {
   Sidebar,
   SidebarContent,
@@ -28,6 +29,12 @@ const showPersonal = computed(() => config.public.showZohoDocs);
 function closeSideBar() {
   setOpenMobile(false);
 }
+
+const colorMode = useColorMode();
+
+const toggleTheme = () => {
+  colorMode.preference = colorMode.preference === 'dark' ? 'light' : 'dark';
+};
 </script>
 
 <template>
@@ -48,6 +55,18 @@ function closeSideBar() {
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton class="cursor-pointer" @click="toggleTheme">
+                <template v-if="colorMode.preference === 'dark'">
+                  <Moon /> <span>Dark Mode</span>
+                </template>
+                <template v-else>
+                  <Sun /> <span>Light Mode</span>
+                </template>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            
             <Collapsible class="group/collapsible">
               <SidebarMenuItem>
                 <CollapsibleTrigger as-child>

@@ -69,9 +69,9 @@ watch(() => user.value?.zoho_id, (newId) => {
         <div class="relative w-full">
           <select 
             v-model="activeTab"
-            class="w-full bg-black border border-blue-500 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-blue"
+            class="w-full dark:bg-black border border-blue-500 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-blue"
           >
-            <option v-for="tab in tabs" :key="tab.id" :value="tab.id">
+            <option v-for="tab in tabs" :key="tab.id" :value="tab.id" class="dark:bg-black dark:text-white text-black bg-white">
               {{ tab.label }}
             </option>
           </select>
@@ -81,13 +81,13 @@ watch(() => user.value?.zoho_id, (newId) => {
         </div>
       </div>
 
-      <div class="hidden sm:inline-flex bg-black border border-blue-500 rounded-full shadow-blue overflow-hidden">
+      <div class="hidden sm:inline-flex dark:bg-black border border-blue-500 rounded-full shadow-blue overflow-hidden">
         <button 
           v-for="tab in tabs" 
           :key="tab.id"
           @click="activeTab = tab.id"
           class="px-8 py-2 text-lg font-semibold transition-all duration-200"
-          :class="activeTab === tab.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'"
+          :class="activeTab === tab.id ? 'bg-blue-600 text-white' : 'dark:text-white hover:text-white hover:bg-blue-600'"
         >
           {{ tab.label }}
         </button>

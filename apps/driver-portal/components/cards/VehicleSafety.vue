@@ -75,7 +75,7 @@ const validity = computed(() => {
   return { label: 'Valid', class: 'bg-green-500/20 text-green-400 border-green-500/30', isValid: true };
 });
 
-const isButtonDisabled = computed(() => isUploading.value || (validity.value.isValid && !!safetyDocId.value));
+const isButtonDisabled = computed(() => isUploading.value);
 
 const triggerUpload = () => {
   if (!isButtonDisabled.value) fileInput.value?.click();
@@ -122,7 +122,7 @@ const handleFileUpload = async (event: Event) => {
 </script>
 
 <template>
-  <div class="bg-black border border-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-blue h-full relative">
+  <div class="dark:bg-black border rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-blue h-full relative">
     
     <input 
       type="file" 
@@ -138,7 +138,7 @@ const handleFileUpload = async (event: Event) => {
         <div class="bg-blue-600/20 p-1.5 rounded-lg shrink-0">
           <ShieldCheck class="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
         </div>
-        <span class="text-lg sm:text-xl font-semibold tracking-tight text-white truncate">Vehicle Safety</span>
+        <span class="text-lg sm:text-xl font-semibold tracking-tight dark:text-white truncate">Vehicle Safety</span>
       </div>
       <div class="shrink-0">
         <span :class="[validity.class, 'px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-sm font-medium border whitespace-nowrap']">
@@ -168,8 +168,8 @@ const handleFileUpload = async (event: Event) => {
 
       <div class="flex flex-col justify-top space-y-2 w-full">
         <div class="space-y-1">
-          <p class="text-white text-sm flex justify-between gap-2">
-            <span class="font-semibold text-gray-400">Safety Expiry:</span> 
+          <p class="text-sm flex justify-between gap-2">
+            <span class="font-semibold dark:text-black">Safety Expiry:</span> 
             <span>{{ safetyExp || '---' }}</span>
           </p>
         </div>
@@ -188,9 +188,8 @@ const handleFileUpload = async (event: Event) => {
         >
           <span v-if="isUploading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
           <template v-else>
-            <CheckCircle2 v-if="validity.isValid && safetyDocId" class="w-4 h-4 text-blue-500" />
-            <Upload v-else class="w-4 h-4" />
-            <span>{{ (validity.isValid && safetyDocId) ? 'Verified' : 'Upload Safety' }}</span>
+            <Upload class="w-4 h-4" />
+            <span>Upload Safety</span>
           </template>
         </button>
         <p class="text-[10px] text-gray-500 text-center uppercase tracking-widest mt-2">
@@ -219,7 +218,6 @@ const handleFileUpload = async (event: Event) => {
             <AlertCircle v-else class="w-5 h-5 text-white" />
           </div>
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs uppercase font-bold tracking-widest opacity-70">System Notification</span>
             <span class="text-sm font-semibold">{{ toastMessage }}</span>
           </div>
           <button @click="showToast = false" class="ml-auto hover:bg-white/20 p-1.5 rounded-xl transition-colors">

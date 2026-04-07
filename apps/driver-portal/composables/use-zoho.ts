@@ -101,6 +101,23 @@ export function useZoho() {
     }
   }
 
+  async function updateProfile(payload: Record<string, any>) {
+  isLoading.value = true;
+  try {
+    const response = await post('/api/zoho/update-profile', payload);
+    
+    if (response && response.success) {
+      await fetchZohoDetails();
+    }
+    return response;
+  } catch (error) {
+    console.error("Zoho Profile Update Error:", error);
+    throw error;
+  } finally {
+    isLoading.value = false;
+  }
+}
+
   async function logout() {
     driverDetails.value = null;
   }
@@ -112,6 +129,7 @@ export function useZoho() {
     fetchSecureImage,
     viewAttachment,
     uploadDocuments,
+    updateProfile,
     logout,
     
     // --- Identification & Personal ---

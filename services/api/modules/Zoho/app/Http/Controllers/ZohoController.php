@@ -130,4 +130,41 @@ public function updateDocument(Request $request): JsonResponse
             ->header('Content-Type', $file['type'] ?? 'image/jpeg')
             ->header('Content-Disposition', 'inline; filename="attachment"');
     }
+
+    public function updateProfile(Request $request)
+    {
+        $zohoId = $this->getZohoId($request);
+
+        $validated = $request->validate([
+            'Bank_Name'    => 'nullable|string',
+            'Bank_Account' => 'nullable|string',
+            'HST_GST'       => 'nullable|string',
+        ]);
+
+        $mapping = [
+            'Bank_Name'    => 'TBU_Bank_Name',
+            'Bank_Account' => 'TBU_Bank_Account',
+            'HST_GST'       => 'TBU_HST_GST',
+        ];
+
+        $zohoData = [];
+
+        foreach ($validated as $key => $value) {
+            if ($request->has($key)) {
+                $zohoData[$mapping[$key]] = $value;
+            }
+        }
+
+        if (empty($zohoData)) {
+            return response()->json(['success' => false, 'message' => 'No data to update'], 400);
+        }
+
+        $result = $this->zoho->updateContact($zohoId, $zohoData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Details submitted for admin review.',
+            'data' => $result
+        ]);
+    }
 }

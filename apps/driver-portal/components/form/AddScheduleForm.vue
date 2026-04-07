@@ -197,7 +197,7 @@ const handleSubmit = () => {
 <template>
   <div
     v-if="props.visible"
-    class="mt-2 p-3 border rounded-xl shadow-md bg-white dark:bg-gray-900"
+    class="mt-2 p-3 border rounded-xl shadow-md dark:bg-black"
   >
     <form @submit.prevent="handleSubmit">
       <div class="flex flex-col space-y-2 w-full">

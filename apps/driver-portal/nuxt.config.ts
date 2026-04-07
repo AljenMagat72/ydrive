@@ -16,8 +16,14 @@ export default defineNuxtConfig({
     '@nuxt/image',
     'shadcn-nuxt',
     '@nuxtjs/color-mode',
-    '@sentry/nuxt/module'
+    '@sentry/nuxt/module',
   ],
+  colorMode: {
+    preference: "light",
+    fallback: "light",
+    classSuffix: "",
+    storageKey: 'nuxt-color-mode'
+  },
 
   css: ['~/assets/css/tailwind.css'],
 
