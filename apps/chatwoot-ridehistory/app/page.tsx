@@ -8,11 +8,11 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
-  ArrowRight,
   Building2,
+  CalendarDays,
+  Car,
   ExternalLink,
   FlagTriangleRight,
   Hash,
@@ -20,8 +20,11 @@ import {
   Loader2,
   Mail,
   MapPin,
+  MoreHorizontal,
   Phone,
+  User,
   UserCircle,
+  Wallet,
 } from "lucide-react";
 
 type StopType = "pickup" | "dropoff" | string;
@@ -159,16 +162,22 @@ function formatDateTime(iso?: string | null) {
   return new Intl.DateTimeFormat("en-CA", rideDateTimeFormatOptions).format(d);
 }
 
-function formatDateOnly(iso?: string | null) {
-  if (!iso) return "—";
+/** Ride card left column: bold "Mar 29", grey year below (matches dashboard mock). */
+function formatRideCardDateParts(iso?: string | null): { monthDay: string; year: string } | null {
+  if (!iso) return null;
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("en-CA", {
-    month: rideDateTimeFormatOptions.month,
-    day: rideDateTimeFormatOptions.day,
-    year: rideDateTimeFormatOptions.year,
-    timeZone: rideDateTimeFormatOptions.timeZone,
+  if (Number.isNaN(d.getTime())) return null;
+  const tz = rideDateTimeFormatOptions.timeZone;
+  const monthDay = new Intl.DateTimeFormat("en-CA", {
+    month: "short",
+    day: "numeric",
+    timeZone: tz,
   }).format(d);
+  const year = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    timeZone: tz,
+  }).format(d);
+  return { monthDay, year };
 }
 
 function formatTimeOnly(iso?: string | null) {
@@ -180,10 +189,6 @@ function formatTimeOnly(iso?: string | null) {
     minute: rideDateTimeFormatOptions.minute,
     timeZone: rideDateTimeFormatOptions.timeZone,
   }).format(d);
-}
-
-function bestStopTimestamp(s: StopPoint) {
-  return s.completedAt || s.arrivedAt || s.eta || s.plannedArrivalTime || s.beforeTime || null;
 }
 
 function getPickupStop(ride: Ride) {
@@ -201,15 +206,6 @@ function getIntermediateStops(ride: Ride) {
   const sorted = [...ride.stopPoints].sort(byOrder);
   if (sorted.length <= 2) return [];
   return sorted.slice(1, -1);
-}
-
-function rideStateArrowClasses(state: string) {
-  const s = String(state).toLowerCase();
-  if (s === "completed") return "text-emerald-300";
-  if (s === "canceled" || s === "cancelled" || s === "failed" || s === "rejected") return "text-rose-300";
-  if (s === "active" || s === "dispatched") return "text-amber-300";
-  if (s === "pending" || s === "matching") return "text-sky-300/90";
-  return "text-sky-300/90";
 }
 
 function buildStripePaymentUrl(ride: Ride) {
@@ -544,43 +540,6 @@ function useChatwootAppContext() {
   return { ctx, embedded, refresh };
 }
 
-const StopDot = React.forwardRef<
-  HTMLButtonElement,
-  {
-    variant: "pickup" | "dropoff" | "mid";
-    tooltipTitle: string;
-  } & Omit<React.ComponentPropsWithoutRef<"button">, "variant">
->(function StopDot({ variant, tooltipTitle, className, ...props }, ref) {
-  let icon: React.ReactNode;
-  if (variant === "dropoff") {
-    icon = <FlagTriangleRight className="h-5 w-5 md:h-8 md:w-8" />;
-  } else {
-    icon = <MapPin className="h-6 w-6 md:h-8 md:w-8" />;
-  }
-
-  const tones =
-    variant === "pickup"
-      ? "text-emerald-400 hover:text-emerald-300"
-      : variant === "dropoff"
-        ? "text-rose-400 hover:text-rose-300"
-        : "text-amber-400 hover:text-amber-300";
-
-  return (
-    <button
-      ref={ref}
-      type="button"
-      className={cn(
-        "grid h-8 w-8 place-items-center rounded-md border-0 bg-transparent transition-colors hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 md:h-9 md:w-9",
-        tones,
-        className,
-      )}
-      aria-label={tooltipTitle}
-      {...props}
-    >
-      {icon}
-    </button>
-  );
-});
 
 function DriverPopover({ ride }: { ride: Ride }) {
   const name = [ride.driver?.firstName, ride.driver?.lastName].filter(Boolean).join(" ").trim() || "—";
@@ -616,7 +575,7 @@ function DriverPopover({ ride }: { ride: Ride }) {
       <PopoverContent
         sideOffset={8}
         align="start"
-        className="w-[min(100vw-2rem,380px)] max-w-[380px] border-0 bg-zinc-900 p-4 text-base text-white shadow-[0_12px_50px_rgba(0,0,0,0.75)] outline-none"
+        className="w-[min(100vw-2rem,380px)] max-w-[380px] border-0 bg-zinc-900 p-3 text-sm text-white shadow-widget-popover outline-none sm:p-4 sm:text-base"
       >
         <div className="space-y-3">
           <div className="text-lg font-semibold text-white">{name}</div>
@@ -659,186 +618,212 @@ function RideRow({ ride }: { ride: Ride }) {
     (ride.vehicle ? "Vehicle" : null) ||
     "—";
 
-  return (
-    <Card className="bg-white/[0.09] shadow-[0_8px_36px_rgba(0,0,0,0.28)] ring-1 ring-white/[0.14]">
-      <div className="px-2 sm:py-1 sm:px-4">
-        <div className="grid gap-4 sm:grid-cols-[160px_1fr_240px] sm:items-start sm:gap-6">
-          {/* Column 1: Date + time */}
-          <div className="flex shrink-0 flex-row flex-wrap items-baseline gap-x-2 gap-y-0.5 text-lg font-medium leading-tight text-white sm:pt-0.5">
-            <div>{formatDateOnly(ride.createdAt)}</div>
-            <div className="text-base font-normal text-white/90">{formatTimeOnly(ride.createdAt)}</div>
-          </div>
+  const pickupShort = pickup?.description?.split(",")[0] ?? "Pickup";
+  const dropoffShort = dropoff?.description?.split(",")[0] ?? "Dropoff";
+  const dateParts = formatRideCardDateParts(ride.createdAt);
 
-          {/* Column 2: Route + stops */}
-          <div className="min-w-0">
-            <div className="min-w-0 w-full text-xl font-medium tracking-tight text-white sm:text-3xl">
-              <div className="flex min-w-0 flex-col gap-1.5 flex-row flex-wrap sm:flex-row sm:items-center sm:gap-4">
-                <span className="min-w-0 break-words leading-snug text-white drop-shadow-[0_1px_12px_rgba(255,255,255,0.08)]">
-                  {pickup?.description?.split(",")[0] ?? "Pickup"}
-                </span>
-                <ArrowRight className={cn("hidden h-5 w-5 shrink-0 sm:block", rideStateArrowClasses(ride.state))} aria-hidden />
-                <span className="flex min-w-0 items-start gap-2 leading-snug sm:contents">
-                  <ArrowRight className={cn("mt-0.5 h-5 w-5 shrink-0 sm:hidden", rideStateArrowClasses(ride.state))} aria-hidden />
-                  <span className="min-w-0 break-words text-whites">{dropoff?.description?.split(",")[0] ?? "Dropoff"}</span>
-                </span>
+  return (
+    <Card className="overflow-hidden rounded-2xl border-0 bg-widget-panel shadow-widget-card ring-1 ring-widget-ring">
+      <div className="p-4 sm:p-5">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:gap-6">
+          {/* Column 1: calendar button + Mar 29 / year + rule + time + vertical rule */}
+          <div className="flex shrink-0 gap-3 border-b border-white/10 pb-4 lg:w-[112px] lg:flex-col lg:gap-2.5 lg:border-b-0 lg:border-r lg:border-white/10 lg:pb-0 lg:pr-5">
+            <div
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-widget-tile ring-1 ring-sky-500/35"
+              aria-hidden
+            >
+              <CalendarDays className="h-4 w-4 text-sky-400" strokeWidth={1.75} />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5 lg:flex-initial">
+              {dateParts ? (
+                <>
+                  <div className="text-widget-date font-bold leading-none tracking-tight text-white">{dateParts.monthDay}</div>
+                  <div className="text-widget-meta font-normal leading-tight text-zinc-400">{dateParts.year}</div>
+                </>
+              ) : (
+                <div className="text-sm text-zinc-400">—</div>
+              )}
+              <div className="h-px w-11 max-w-full bg-white/20" />
+              <div className="text-widget-meta font-normal leading-tight text-zinc-400">
+                {formatTimeOnly(ride.createdAt)}
               </div>
             </div>
+          </div>
 
-            <div className="mt-5 flex flex-wrap items-center sm:gap-11 justify-between sm:justify-start">
+          {/* Column 2: route rows (icon + address) + dashed spine + driver/vehicle one row */}
+          <div className="min-w-0 flex-1">
+            <div className="space-y-0">
               {pickup ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <StopDot variant="pickup" tooltipTitle={formatDateTime(bestStopTimestamp(pickup))} />
-                  </TooltipTrigger>
-                  <TooltipContent
-                    sideOffset={8}
-                    align="start"
-                    className="max-w-[420px] flex flex-col items-stretch gap-0 border-0 bg-zinc-900 p-3 text-base text-white shadow-[0_12px_50px_rgba(0,0,0,0.75)]"
-                  >
-                    <div className="space-y-3">
-                      <div className="text-lg font-semibold leading-snug text-white">Pickup</div>
+                <div className="flex items-start gap-3">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-emerald-500/55 bg-widget-route-icon text-emerald-400 transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40"
+                        aria-label="Pickup details"
+                      >
+                        <MapPin className="h-4 w-4" strokeWidth={2.25} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="bottom"
+                      align="start"
+                      sideOffset={8}
+                      className="w-[min(100vw-2rem,420px)] max-w-[420px] border-0 bg-zinc-900 p-3 text-sm text-white shadow-widget-popover"
+                    >
                       <div className="space-y-2">
-
-                        <div className="font-semibold leading-snug text-white/90">{pickup.description}</div>
-                      </div>
-                      <div className="grid gap-2 text-sm">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="font-semibold text-white/75">Booking time</div>
-                          <div className="font-bold text-white">{formatDateTime(ride.createdAt)}</div>
-                        </div>
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="font-semibold text-white/75">Arrival time</div>
-                          <div className="font-bold text-white">{formatDateTime(pickup.arrivedAt ?? null)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              ) : null}
-
-              {midStops.length ? (
-                <div className="flex items-center sm:gap-9 mx-12 justify-between sm:justify-start">
-                  {midStops.map((s) => {
-                    return (
-                      <Tooltip key={s.id}>
-                        <TooltipTrigger asChild>
-                          <StopDot variant="mid" tooltipTitle={formatDateTime(bestStopTimestamp(s))} />
-                        </TooltipTrigger>
-                        <TooltipContent
-                          sideOffset={8}
-                          align="start"
-                          className="max-w-[420px] flex flex-col items-stretch gap-0 border-0 bg-zinc-900 p-3 text-base text-white shadow-[0_12px_50px_rgba(0,0,0,0.75)]"
-                        >
-                          <div className="space-y-3">
-                            <div className="text-lg font-semibold leading-snug text-white">Stop</div>
-                            <div className="space-y-2">
-                
-                              <div className="font-semibold leading-snug text-white/90">{s.description}</div>
-                            </div>
-                            <div className="grid gap-2 text-sm">
-                              <div className="flex items-center justify-between gap-4">
-                                <div className="font-semibold text-white/75">Arrived at stop</div>
-                                <div className="font-bold text-white">{formatDateTime(s.arrivedAt ?? null)}</div>
-                              </div>
-                              <div className="flex items-center justify-between gap-4">
-                                <div className="font-semibold text-white/75">Completed stop</div>
-                                <div className="font-bold text-white">{formatDateTime(s.completedAt ?? null)}</div>
-                              </div>
-                            </div>
+                        <div className="text-base font-semibold text-white">Pickup</div>
+                        <div className="text-white/90">{pickup.description}</div>
+                        <div className="grid gap-1 text-xs text-white/75">
+                          <div className="flex justify-between gap-4">
+                            <span>Booking time</span>
+                            <span className="font-semibold text-white">{formatDateTime(ride.createdAt)}</span>
                           </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
+                          <div className="flex justify-between gap-4">
+                            <span>Arrival</span>
+                            <span className="font-semibold text-white">{formatDateTime(pickup.arrivedAt ?? null)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <p className="min-w-0 flex-1 pt-1 text-base font-bold leading-snug text-white sm:text-lg">{pickupShort}</p>
                 </div>
               ) : null}
 
-              {dropoff ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <StopDot variant="dropoff" tooltipTitle={formatDateTime(bestStopTimestamp(dropoff))} />
-                  </TooltipTrigger>
-                  <TooltipContent
-                    sideOffset={8}
-                    align="start"
-                    className="max-w-[420px] flex flex-col items-stretch gap-0 border-0 bg-zinc-900 p-3 text-base text-white shadow-[0_12px_50px_rgba(0,0,0,0.75)]"
-                  >
-                    <div className="space-y-3">
-                      <div className="text-lg font-semibold leading-snug text-white">Dropoff</div>
-                      <div className="space-y-2">
-                 
-                        <div className="font-semibold leading-snug text-white/90">{dropoff.description}</div>
-                      </div>
-                      <div className="grid gap-2 text-sm">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="font-semibold text-white/75">Arrived at stop</div>
-                          <div className="font-bold text-white">{formatDateTime(dropoff.arrivedAt ?? null)}</div>
-                        </div>
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="font-semibold text-white/75">Completed stop</div>
-                          <div className="font-bold text-white">{formatDateTime(dropoff.completedAt ?? null)}</div>
-                        </div>
-                        <div className="flex items-center justify-between gap-4 border-t border-white/10 pt-2">
-                          <div className="font-semibold text-white/75">Ride completed time</div>
-                          <div className="font-bold text-white">{formatDateTime(rideCompletedAtIso(ride))}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
+              {pickup && (midStops.length > 0 || dropoff) ? (
+                <div className="ml-4 flex h-5 w-0 justify-center border-l border-dashed border-white/25" aria-hidden />
               ) : null}
-            </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-x-7 gap-y-1 text-base font-medium text-zinc-100">
-              <div className="inline-flex items-center gap-2">
-                <span className="font-base text-zinc-300">Driver : </span>
-                <DriverPopover ride={ride} />
-              </div>
-              <div className="inline-flex items-center gap-2">
-                <span className="font-base text-zinc-300">Vehicle type : </span>
-                <span className="font-medium text-white">{vehicleLabel}</span>
+              {midStops.map((s) => (
+                <React.Fragment key={s.id}>
+                  <div className="flex items-start gap-3">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-500/45 bg-widget-route-icon text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40"
+                          aria-label="Stop details"
+                        >
+                          <MapPin className="h-3.5 w-3.5" strokeWidth={2.25} />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        side="bottom"
+                        align="start"
+                        sideOffset={8}
+                        className="w-[min(100vw-2rem,420px)] max-w-[420px] border-0 bg-zinc-900 p-3 text-sm text-white shadow-widget-popover"
+                      >
+                        <div className="space-y-2">
+                          <div className="text-base font-semibold text-white">Stop</div>
+                          <div className="text-white/90">{s.description}</div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <p className="min-w-0 flex-1 pt-1 text-sm font-semibold leading-snug text-white/90">{s.description?.split(",")[0] ?? "Stop"}</p>
+                  </div>
+                  <div className="ml-4 flex h-5 w-0 justify-center border-l border-dashed border-white/25" aria-hidden />
+                </React.Fragment>
+              ))}
+
+              {dropoff ? (
+                <div className="flex items-start gap-3">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-rose-500/55 bg-widget-route-icon text-rose-400 transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40"
+                        aria-label="Dropoff details"
+                      >
+                        <FlagTriangleRight className="h-4 w-4" strokeWidth={2.25} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="bottom"
+                      align="start"
+                      sideOffset={8}
+                      className="w-[min(100vw-2rem,420px)] max-w-[420px] border-0 bg-zinc-900 p-3 text-sm text-white shadow-widget-popover"
+                    >
+                      <div className="space-y-2">
+                        <div className="text-base font-semibold text-white">Dropoff</div>
+                        <div className="text-white/90">{dropoff.description}</div>
+                        <div className="border-t border-white/10 pt-2 text-xs">
+                          <div className="flex justify-between gap-4 text-white/75">
+                            <span>Ride completed</span>
+                            <span className="font-semibold text-white">{formatDateTime(rideCompletedAtIso(ride))}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <p className="min-w-0 flex-1 pt-1 text-base font-bold leading-snug text-white sm:text-lg">{dropoffShort}</p>
+                </div>
+              ) : null}
+
+              <div className="mt-4 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-widget-meta text-zinc-400 sm:text-sm">
+                <span className="inline-flex items-center gap-1.5">
+                  <User className="h-3.5 w-3.5 shrink-0 text-zinc-500" aria-hidden />
+                  <span className="text-zinc-500">Driver:</span>
+                  <span className="min-w-0 font-medium text-zinc-300">
+                    <DriverPopover ride={ride} />
+                  </span>
+                </span>
+                <span className="text-zinc-600" aria-hidden>
+                  ·
+                </span>
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <Car className="h-3.5 w-3.5 shrink-0 text-zinc-500" aria-hidden />
+                  <span className="text-zinc-500">Vehicle:</span>
+                  <span className="font-medium text-zinc-300">{vehicleLabel}</span>
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Column 3: Money + links */}
-          <div className="shrink-0 sm:pt-0.5">
-            <div className="relative flex justify-center">
-              <div className="text-center text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-                {formatMoney(ride.priceAmount, ride.priceCurrency)}
+          {/* Column 3: price + actions */}
+          <div className="flex min-w-0 justify-between shrink-0 flex-col gap-3 border-t border-white/10 pt-4 lg:min-w-[240px] lg:w-[min(100%,280px)] lg:border-t-0 lg:pt-0">
+            <div className="flex w-full items-start justify-between gap-3">
+              <div className="ml-auto flex items-center gap-1.5">
+                <div className="text-right text-2xl font-bold tabular-nums tracking-tight text-white sm:text-3xl">
+                  {formatMoney(ride.priceAmount, ride.priceCurrency)}
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-widget-surface-25"
+                  onClick={() => setPriceOpen((o) => !o)}
+                  aria-label="Price details"
+                >
+                  <Info className="h-4 w-4" strokeWidth={2} />
+                </button>
               </div>
-              <button
-                type="button"
-                className="absolute -top-2 right-0 inline-flex h-8 w-8 items-center justify-center rounded-full text-white/80 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-                onClick={() => setPriceOpen((o) => !o)}
-                aria-label="Price details"
-              >
-                <Info className="h-5 w-5" />
-              </button>
             </div>
 
-            <div className="mt-8 sm:mt-12 flex flex-row justify-center items-center sm:mr-4">
-              <Button
-                asChild
-                variant="ghost"
-                className="h-9  justify-center text-base font-base text-sky-300 hover:bg-white/10 hover:text-sky-200"
+            <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:justify-end sm:gap-3">
+              <a
+                href={stripeUrl ?? "#"}
+                target="_blank"
+                rel="noreferrer"
+                aria-disabled={!stripeUrl}
+                className={cn(
+                  "inline-flex h-auto min-h-12 w-full min-w-0 shrink items-center justify-center gap-2 whitespace-normal rounded-sm border border-white/15 bg-widget-action-muted px-4 py-3 text-center text-base font-medium leading-tight text-zinc-300 shadow-none hover:bg-widget-surface-6 hover:text-zinc-100 sm:min-h-10 sm:w-auto sm:min-w-40 sm:px-4 sm:py-2 sm:text-sm sm:leading-none sm:whitespace-nowrap",
+                  !stripeUrl && "pointer-events-none opacity-45",
+                )}
               >
-                <a href={stripeUrl ?? "#"} target="_blank" rel="noreferrer" aria-disabled={!stripeUrl}>
-                  <span>Open Payment</span>
-                  <ExternalLink className="ml-2 h-4 w-4 opacity-90" />
-                </a>
-              </Button>
-
-              <Button
-                asChild
-                variant="ghost"
-                className="h-9 justify-center text-base font-base text-white hover:bg-white/10 hover:text-white"
+                <Wallet className="h-5 w-5 shrink-0 opacity-90 sm:h-4 sm:w-4" aria-hidden />
+                <span>Open Payment</span>
+              </a>
+              <a
+                href={bookingUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={cn(
+                  "inline-flex h-auto min-h-12 w-full min-w-0 shrink items-center justify-center gap-2 whitespace-normal rounded-sm border border-transparent bg-blue-500 px-4 py-3 text-center text-base font-semibold leading-tight text-white shadow-sm hover:bg-blue-400 sm:min-h-10 sm:w-auto sm:min-w-40 sm:px-4 sm:py-2 sm:text-sm sm:leading-none sm:whitespace-nowrap",
+                )}
               >
-                <a href={bookingUrl} target="_blank" rel="noreferrer">
-                  <span>Open Booking</span>
-                  <ExternalLink className="ml-2 h-4 w-4 opacity-80" />
-                </a>
-              </Button>
+                <CalendarDays className="h-5 w-5 shrink-0 opacity-95 sm:h-4 sm:w-4" aria-hidden />
+                <span className="min-w-0">Open Booking</span>
+                <ExternalLink className="h-4 w-4 shrink-0 opacity-90 sm:h-3.5 sm:w-3.5" aria-hidden />
+              </a>
             </div>
           </div>
         </div>
@@ -912,9 +897,9 @@ function CustomerProfilePopover({ profile }: Readonly<{ profile: DerivedCustomer
       <PopoverContent
         sideOffset={8}
         align="start"
-        className="max-h-[min(70vh,520px)] w-[min(100vw-2rem,400px)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden border-0 bg-zinc-900 p-0 text-base text-white shadow-[0_12px_50px_rgba(0,0,0,0.75)]"
+        className="max-h-[min(70vh,520px)] w-[min(100vw-2rem,400px)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden border-0 bg-zinc-900 p-0 text-base text-white shadow-widget-popover"
       >
-        <div className="border-b border-white/10 bg-white/[0.06] px-4 py-3">
+        <div className="border-b border-white/10 bg-widget-surface-6 px-4 py-3">
           <div className="mt-1 text-lg font-semibold leading-tight text-white">Full Profile</div>
         </div>
         <div className="space-y-4 p-4">
@@ -953,7 +938,7 @@ function CustomerProfilePopover({ profile }: Readonly<{ profile: DerivedCustomer
           {(profile.agentName || profile.agentEmail) && (
             <>
               <Separator className="bg-white/10" />
-              <div className="rounded-xl bg-white/[0.06] p-3 ring-1 ring-white/10">
+              <div className="rounded-xl bg-widget-surface-6 p-3 ring-1 ring-widget-surface-10">
                 <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Current agent</div>
                 <div className="mt-1 font-semibold text-white">{profile.agentName || "—"}</div>
                 {profile.agentEmail ? (
@@ -990,7 +975,7 @@ function CustomerProfilePopover({ profile }: Readonly<{ profile: DerivedCustomer
             <>
               <Separator className="bg-white/10" />
               <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Customer ID</div>
-              <div className="mt-2 space-y-1.5 rounded-xl bg-black/25 p-3 font-mono text-xs text-zinc-300 ring-1 ring-white/10">
+              <div className="mt-2 space-y-1.5 rounded-xl bg-widget-black-25 p-3 font-mono text-xs text-zinc-300 ring-1 ring-widget-surface-10">
                 {Object.entries(profile.mergedCustomAttributes).map(([k, v]) => (
                   <div key={k} className="flex gap-2 break-all">
                     <span className="shrink-0 text-emerald-300/90">{k}</span>
@@ -1022,14 +1007,14 @@ function CustomerHeroAvatar({
       <img
         src={thumbnail}
         alt=""
-        className="h-16 w-16 shrink-0 rounded-2xl object-cover shadow-[0_8px_24px_rgba(0,0,0,0.35)] ring-1 ring-white/25"
+        className="h-16 w-16 shrink-0 rounded-2xl object-cover shadow-widget-avatar ring-1 ring-widget-surface-25"
       />
     );
   }
   return (
     <div
       className={cn(
-        "grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-sky-400/50 to-emerald-500/35 text-xl font-bold tracking-tight text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] ring-2 ring-white/25",
+        "grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-widget-tile text-xl font-bold tracking-tight text-white shadow-widget-avatar ring-2 ring-widget-surface-20",
         loading && "animate-pulse",
       )}
       aria-hidden
@@ -1065,7 +1050,7 @@ function CustomerHeroEmailSlot({
         className="inline-flex max-w-full items-center gap-1.5 truncate text-sky-200 hover:text-sky-100"
       >
         <Mail className="h-4 w-4 shrink-0 opacity-90" />
-        <span className="truncate sm:text-[16px] ">{email}</span>
+        <span className="truncate sm:text-widget-contact">{email}</span>
       </a>
     );
   }
@@ -1092,7 +1077,7 @@ function CustomerHeroPhoneSlot({
     return (
       <a href={telHref} className="inline-flex items-center gap-1.5 text-emerald-200/95 hover:text-emerald-100">
         <Phone className="h-4 w-4 shrink-0 opacity-90" />
-        <span className="truncate sm:text-[16px] ">{phone}</span>
+        <span className="truncate sm:text-widget-contact">{phone}</span>
       </a>
     );
   }
@@ -1123,16 +1108,25 @@ function CustomerHeroContactRow(
 
 function CustomerHeroLifetimePanel({ lifetimeSpend }: Readonly<{ lifetimeSpend: number | null }>) {
   return (
-    <div className="shrink-0 text-right sm:pl-2">
-      <div className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-400">Lifetime spend</div>
-      <div
-        className={cn(
-          "mt-1 inline-flex items-center rounded-full bg-sky-400/25 px-3.5 py-1.5 text-lg font-bold text-white ring-1 ring-sky-300/45 shadow-[0_0_28px_rgba(56,189,248,0.25)] sm:text-xl",
-          lifetimeSpend == null && "text-zinc-400 ring-zinc-600/40 shadow-none",
-        )}
-      >
-        {lifetimeSpend != null ? formatMoney(lifetimeSpend, "CAD") : "—"}
+    <div className="flex shrink-0 items-start justify-end gap-2 sm:pl-2">
+      <div className="text-right">
+        <div className="text-widget-section font-bold uppercase tracking-widget-section text-zinc-400">Lifetime spend</div>
+        <div
+          className={cn(
+            "mt-1 text-2xl font-bold tabular-nums tracking-tight text-white sm:text-3xl",
+            lifetimeSpend == null && "text-zinc-500",
+          )}
+        >
+          {lifetimeSpend != null ? formatMoney(lifetimeSpend, "CAD") : "—"}
+        </div>
       </div>
+      <button
+        type="button"
+        className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/80 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
+        aria-label="More options"
+      >
+        <MoreHorizontal className="h-5 w-5" />
+      </button>
     </div>
   );
 }
@@ -1181,8 +1175,7 @@ function CustomerHero({
 
   return (
     <div className="sticky top-0 z-20 -mx-4 px-4 pb-3 pt-2 backdrop-blur sm:-mx-8 sm:px-8">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-white/[0.16] to-white/[0.07] p-5 ring-1 ring-white/[0.18] shadow-[0_12px_48px_rgba(0,0,0,0.45)] sm:p-6">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(620px_circle_at_18%_0%,rgba(56,189,248,0.28),transparent_58%),radial-gradient(520px_circle_at_88%_18%,rgba(52,211,153,0.2),transparent_55%),radial-gradient(400px_circle_at_50%_100%,rgba(167,139,250,0.12),transparent_50%)]" />
+      <div className="relative overflow-hidden rounded-3xl bg-widget-panel p-4 shadow-widget-hero ring-1 ring-widget-ring sm:p-6">
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-1 gap-4">
             <CustomerHeroAvatar thumbnail={derived?.thumbnail} loading={loading} displayName={displayName} />
@@ -1216,7 +1209,9 @@ function DetailRow({ label, value, mono }: { label: string; value: string; mono?
         <Hash className="h-3.5 w-3.5 opacity-70" />
         <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
       </div>
-      <div className={cn("min-w-0 break-all text-zinc-100", mono && "font-mono text-[13px]sm:text-[18px]")}>{value}</div>
+      <div className={cn("min-w-0 break-all text-zinc-100", mono && "font-mono text-widget-meta sm:text-widget-mono")}>
+        {value}
+      </div>
     </div>
   );
 }
@@ -1248,47 +1243,45 @@ function HomeContent() {
   }
 
   return (
-    <TooltipProvider delayDuration={0} skipDelayDuration={0}>
-      <div className="min-h-dvh bg-[#12151F] text-zinc-50">
-        <div className="w-full px-4 py-4 text-base sm:px-8 sm:py-6 sm:text-[18px]">
-          <CustomerHero
-            embedded={embedded}
-            derived={derived}
-            hasContext={hasContext}
-            loading={heroLoading}
-          />
+    <div className="min-h-dvh bg-widget-app text-zinc-50">
+      <div className="w-full px-4 py-4 text-base sm:px-8 sm:py-6 sm:text-lg">
+        <CustomerHero
+          embedded={embedded}
+          derived={derived}
+          hasContext={hasContext}
+          loading={heroLoading}
+        />
 
-          {ridesStatusNode}
+        {ridesStatusNode}
 
-          <div className="mt-3 space-y-3 sm:mt-4">
-            {rides.map((ride) => (
-              <RideRow key={ride.id} ride={ride} />
-            ))}
-          </div>
+        <div className="mt-3 space-y-3 sm:mt-4">
+          {rides.map((ride) => (
+            <RideRow key={ride.id} ride={ride} />
+          ))}
+        </div>
 
-          <div className="mt-4 flex justify-center">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-10 px-4 text-base font-semibold text-white hover:bg-white/10 disabled:opacity-50"
-              disabled={ridesLoading || !!ridesError || !hasMore}
-              onClick={loadMore}
-            >
-              {ridesLoading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                  Loading…
-                </span>
-              ) : hasMore ? (
-                "Load more"
-              ) : (
-                "No more rides"
-              )}
-            </Button>
-          </div>
+        <div className="mt-4 flex justify-center">
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-10 px-4 text-base font-semibold text-white hover:bg-white/10 disabled:opacity-50"
+            disabled={ridesLoading || !!ridesError || !hasMore}
+            onClick={loadMore}
+          >
+            {ridesLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                Loading…
+              </span>
+            ) : hasMore ? (
+              "Load more"
+            ) : (
+              "No more rides"
+            )}
+          </Button>
         </div>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }
 
@@ -1296,7 +1289,7 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-dvh items-center justify-center bg-[#12151F] text-sm text-zinc-400">
+        <div className="flex min-h-dvh items-center justify-center bg-widget-app text-sm text-zinc-400">
           Loading…
         </div>
       }
