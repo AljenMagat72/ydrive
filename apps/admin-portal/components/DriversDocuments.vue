@@ -46,19 +46,19 @@ const { fetchZohoDetails, downloadAttachmentsZip, isLoading } = useZoho();
 const processedDrivers = computed(() => {
   const list = Array.isArray(props.drivers) ? props.drivers : [];
   return list.map((d) => ({
-    id: d.id ?? 0,
-    name: `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || "Unknown",
-    city: d.city ?? "",
-    zohoId: d.zodo_id || d.zoho_id || d.zohoId || null
+      id: d.id ?? 0,
+      name: `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || "Unknown",
+      city: d.city ?? "",
+      zohoId: d.zodo_id || d.zoho_id || d.zohoId || null
   }));
 });
 
 const filteredDrivers = computed(() => {
   return processedDrivers.value.filter((d) => {
-    const hasValidCity = d.city && d.city !== '';
+    //const hasValidCity = d.city && d.city !== '';
     const matchesCity = selectedCity.value ? d.city.toLowerCase() === selectedCity.value.toLowerCase() : true;
     const matchesSearch = d.name.toLowerCase().includes(searchDriver.value.toLowerCase());
-    return hasValidCity && matchesCity && matchesSearch;
+    return matchesCity && matchesSearch;
   });
 });
 
@@ -179,6 +179,7 @@ const perPageOptions = computed(() => [
       <table class="w-full min-w-full">
         <thead class="border-b">
           <tr class="text-left text-gray-500">
+            <th class="text-xs md:text-sm"></th>
             <th class="px-2 py-1 text-xs md:text-sm">Driver</th>
             <th class="px-2 py-1 text-xs md:text-sm">City</th>
             <th class="px-2 py-1 text-right text-xs md:text-sm"></th>
@@ -186,10 +187,13 @@ const perPageOptions = computed(() => [
         </thead>
 
         <tbody>
-          <template v-for="driver in paginatedDrivers" :key="driver.id">
+          <template v-for="(driver, index) in paginatedDrivers" :key="driver.id">
             <tr class="border-b cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700" @click="toggleExpand(driver)">
+              <td class="text-xs text-left md:text-sm font-medium text-gray-400">
+                {{ ((currentPage - 1) * itemsPerPage) + index + 1 }}
+              </td>
               <td class="py-3 text-xs md:text-sm font-medium w-full max-w-[280px] px-2 truncate dark:text-white/70">
-                {{ driver.name }}
+               {{ driver.name }}
               </td>
               <td class="px-2 py-1 text-xs md:text-sm">
                 {{ driver.city }}

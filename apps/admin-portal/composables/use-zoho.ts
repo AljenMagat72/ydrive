@@ -9,6 +9,20 @@ export function useZoho() {
   const isLoading = ref(false);
   const config = useRuntimeConfig();
 
+  const checkIsExpired = (dateString: string | undefined) => {
+    if (!dateString || dateString === '---') return false;
+    
+    const expDate = new Date(dateString);
+    const today = new Date();
+    
+    // Reset time to midnight to compare just the date
+    expDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    // If the expiration date is today or in the past, it's expired
+    return expDate <= today; 
+  };
+
   async function fetchZohoDetails(zohoId: string): Promise<ZohoDriverData | null> {
     if (!zohoId) return null;
     isLoading.value = true;
@@ -63,6 +77,23 @@ export function useZoho() {
     isLoading, 
     fetchZohoDetails, 
     getAttachmentUrl, 
-    downloadAttachmentsZip 
+    downloadAttachmentsZip,
+    checkIsExpired,
+    
+    getExpirationStatus: (data: ZohoDriverData) => {
+      const complianceFields = [
+        'License_Exp', 
+        'City_License_Exp', 
+        'Criminal_Check_Exp', 
+        'Abstract_Exp', 
+        'Insurance_Exp', 
+        'Registration_Exp', 
+        'Safety_Exp'
+      ];
+
+      return Object.values(data).flat().some(item => {
+        return complianceFields.some(field => checkIsExpired(item[field]));
+      });
+    }
   };
 }

@@ -46,7 +46,7 @@ async function submit() {
     );
 
     if (response.success) {
-      navigateTo("/driver/schedule");
+      navigateTo("/admin/dashboard");
     } else {
       error.value = response.message || "Invalid credentials";
     }

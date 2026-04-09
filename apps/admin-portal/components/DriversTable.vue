@@ -92,7 +92,7 @@ watch(
 const filteredDrivers = computed(() => {
   let drivers = localDrivers.value.filter((d) => {
 
-    const hasValidCity = d.city && d.city !== null && d.city !== '';
+    // const hasValidCity = d.city && d.city !== null && d.city !== '';
     
     const matchesCity = selectedCity.value
       ? d.city.toLowerCase() === selectedCity.value.toLowerCase()
@@ -118,7 +118,7 @@ const filteredDrivers = computed(() => {
       d.acceptance >= acceptanceRange.value.min && 
       d.acceptance <= acceptanceRange.value.max;
     
-    return hasValidCity && matchesCity && matchesSearch && matchesActive && matchesSchedule && matchesAcceptanceRange;
+    return matchesCity && matchesSearch && matchesActive && matchesSchedule && matchesAcceptanceRange;
   });
   
    if (sortField.value) {
@@ -489,6 +489,7 @@ function exportToExcel() {
       <table class="w-full min-w-full">
         <thead class="border-b">
           <tr class="text-left text-gray-500">
+            <th></th>
             <th
               class="px-2 py-1 text-left text-gray-500 text-xs md:text-sm pl-7"
             >
@@ -523,11 +524,14 @@ function exportToExcel() {
 
         <tbody>
           <tr
-            v-for="driver in paginatedDrivers"
+            v-for="(driver, index) in paginatedDrivers"
             :key="driver.id"
             class="border-b cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
             @click="$emit('select-driver', driver)"
           >
+              <td class="text-xs text-left md:text-sm font-medium text-gray-400">
+                {{ ((currentPage - 1) * itemsPerPage) + index + 1 }}
+              </td>
             <td
               ref="driverCell"
               class="py-3 text-xs md:text-sm font-medium w-full max-w-[280px] flex gap-2 items-start group relative"
