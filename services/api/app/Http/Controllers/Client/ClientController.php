@@ -94,6 +94,11 @@ class ClientController extends Controller
     return $matches;
   }
 
+  private function rowHasVerifiedEmail(array $row): bool
+  {
+    return array_key_exists('isEmailVerified', $row) && $row['isEmailVerified'] === true;
+  }
+
   /**
    * @param  array<int, array<string, mixed>>  $matches
    */
@@ -102,22 +107,25 @@ class ClientController extends Controller
     if (count($matches) === 0) {
       return $this->respondClientNotFound('Client not found for given email');
     }
-    if (count($matches) > 1) {
-      return response()->json([
-        'message' => 'Multiple clients matched the given email',
-        'count' => count($matches),
-      ], 409);
+    if (count($matches) === 1) {
+      return $this->respondClientFound($matches[0]);
     }
 
-    return $this->respondClientFound($matches[0]);
+    $verified = array_values(array_filter($matches, fn ($row) => is_array($row) && $this->rowHasVerifiedEmail($row)));
+    if (count($verified) === 1) {
+      return $this->respondClientFound($verified[0]);
+    }
+
+    return response()->json([
+      'message' => 'Multiple clients matched the given email',
+      'count' => count($matches),
+    ], 409);
   }
 
-  private function searchByEmail(string $email, string $name = '')
+  private function searchByEmail(string $email)
   {
-    $searchTerm = $name !== '' ? ($name . ' ' . $email) : $email;
-
     $clients = $this->queryClientsSafe([
-      'searchTerm' => $searchTerm,
+      'searchTerm' => $email,
     ]);
     if ($clients instanceof \Illuminate\Http\JsonResponse) {
       return $clients;
@@ -149,9 +157,8 @@ class ClientController extends Controller
       return $this->searchByPhone($phone);
     }
 
-    // Email-only or name+email lookup. We only accept an exact email match to avoid fuzzy mis-association.
     if ($hasEmail) {
-      return $this->searchByEmail($email, $hasName ? $name : '');
+      return $this->searchByEmail($email);
     }
 
     $message = !$hasName
