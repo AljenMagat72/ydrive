@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Calendar, CalendarClock, CalendarPlus, ChevronRight, LogOut, User, Moon, 
   Sun } from 'lucide-vue-next';
-import { useAuth, useRuntimeConfig, useColorMode } from '#imports';
+import { useAuth, useRuntimeConfig, useColorMode, onMounted } from '#imports';
 import {
   Sidebar,
   SidebarContent,
@@ -20,11 +20,57 @@ import {
 import { Collapsible, CollapsibleTrigger, CollapsibleContent, } from './ui/collapsible';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { computed } from 'vue';
+import { useZoho } from '@/composables/use-zoho';
+import { AlertCircle } from 'lucide-vue-next';
 
 const { user, logout } = useAuth();
 const { setOpenMobile } = useSidebar();
 const config = useRuntimeConfig();
 const showPersonal = computed(() => config.public.showZohoDocs);
+const { driverDetails, fetchZohoDetails } = useZoho();
+
+onMounted(() => {
+  fetchZohoDetails();
+});
+
+const documentStatus = computed(() => {
+  if (!driverDetails.value) return 'clear';
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const thirtyDaysFromNow = new Date();
+  thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+  const expiryKeys = [
+    'License_Exp', 
+    'City_License_Exp', 
+    'Criminal_Check_Exp', 
+    'Abstract_Exp', 
+    'Insurance_Exp', 
+    'Registration_Exp', 
+    'Safety_Exp'
+  ];
+
+  let status = 'clear';
+
+  for (const key of expiryKeys) {
+    const dateValue = driverDetails.value[key];
+    if (!dateValue || dateValue === '---') continue;
+
+    const expiryDate = new Date(dateValue);
+    
+    if (expiryDate < today) {
+      return 'expired';
+    } 
+    
+    if (expiryDate <= thirtyDaysFromNow) {
+      status = 'warning'; 
+    }
+  }
+
+  return status;
+});
 
 function closeSideBar() {
   setOpenMobile(false);
@@ -32,14 +78,15 @@ function closeSideBar() {
 
 const colorMode = useColorMode();
 
-const toggleTheme = () => {
-  colorMode.preference = colorMode.preference === 'dark' ? 'light' : 'dark';
+const setTheme = (theme: 'light' | 'dark') => {
+  colorMode.preference = theme;
 };
 </script>
 
 <template>
   <Sidebar>
     <SidebarHeader>
+    <div class="flex flex-col gap-y-4">
       <div class="flex flex-row items-center gap-2">
         <Avatar class="size-10">
           <AvatarImage :src="user?.avatar ?? ''" />
@@ -50,23 +97,35 @@ const toggleTheme = () => {
           <p>{{ user?.lastName }}</p>
         </div>
       </div>
+      <div class="flex w-full p-1 rounded-lg transition-colors duration-300 dark:bg-[#1C1C1D] border dark:border-white/5 shadow-blue">
+        <button
+          type="button"
+          class="w-full py-1.5 flex justify-center items-center gap-2 text-xs transition-all duration-200"
+          :class="colorMode.preference === 'light' 
+            ? 'bg-white rounded shadow-sm text-black font-semibold' 
+            : 'text-gray-400 hover:text-blue-400'"
+          @click="setTheme('light')"
+        >
+          <Sun :size="14" /> Light
+        </button>
+
+        <button
+          type="button"
+          class="w-full py-1.5 flex justify-center items-center gap-2 text-xs transition-all duration-200"
+          :class="colorMode.preference === 'dark' 
+            ? 'bg-gray-700 rounded shadow-sm text-white font-semibold' 
+            : 'text-gray-400 hover:text-blue-400'"
+          @click="setTheme('dark')"
+        >
+          <Moon :size="14" /> Dark
+        </button>
+      </div>
+      </div>
     </SidebarHeader>
     <SidebarContent>
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
-
-            <SidebarMenuItem>
-              <SidebarMenuButton class="cursor-pointer" @click="toggleTheme">
-                <template v-if="colorMode.preference === 'dark'">
-                  <Moon /> <span>Dark Mode</span>
-                </template>
-                <template v-else>
-                  <Sun /> <span>Light Mode</span>
-                </template>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            
             <Collapsible class="group/collapsible">
               <SidebarMenuItem>
                 <CollapsibleTrigger as-child>
@@ -115,9 +174,20 @@ const toggleTheme = () => {
             </Collapsible>
             <SidebarMenuItem v-if="showPersonal">
               <SidebarMenuButton as-child>
-                <NuxtLink to="/personal" @click="closeSideBar">
-                  <User /> 
-                  <span>Personal</span>
+                <NuxtLink to="/personal" @click="closeSideBar" class="flex items-center justify-between w-full">
+                  <div class="flex items-center gap-2">
+                    <User />
+                    <span>Documents</span>
+                  </div>
+
+                  <div v-if="documentStatus !== 'clear'" class="flex items-center pr-1">
+                    <div 
+                      class="flex items-center justify-center p-1 rounded-full animate-pulse shadow-sm"
+                      :class="documentStatus === 'expired' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'"
+                    >
+                      <AlertCircle :size="12" :stroke-width="3" />
+                    </div>
+                  </div>
                 </NuxtLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
