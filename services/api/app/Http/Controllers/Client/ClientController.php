@@ -13,10 +13,20 @@ class ClientController extends Controller
   {
   }
 
+  /**
+   * @return array<string, mixed>
+   */
+  private function buildRidesQueryParams(string $clientId, array $validated): array
+  {
+    $params = ['clientId' => $clientId];
+    if (array_key_exists('pageNumber', $validated) && $validated['pageNumber'] !== null) {
+      $params['pageNumber'] = (int) $validated['pageNumber'];
+    }
+    return $params;
+  }
+
   private function normalizePhoneForMatch(string $phone): string
   {
-    // AutoFleet phone values may be stored without "+" or formatting.
-    // Compare only digits to avoid false negatives (e.g. "+1 (555) 123-4567" vs "15551234567").
     return preg_replace('/\D+/', '', $phone) ?? '';
   }
 
@@ -152,7 +162,6 @@ class ClientController extends Controller
     $hasEmail = $email !== '';
     $hasName = $name !== '';
 
-    // Prefer exact match on phone.
     if ($hasPhone) {
       return $this->searchByPhone($phone);
     }
@@ -174,10 +183,7 @@ class ClientController extends Controller
       'pageNumber' => ['nullable', 'integer', 'min:0'],
     ]);
 
-    $params = ['clientId' => $id];
-    if (array_key_exists('pageNumber', $validated) && $validated['pageNumber'] !== null) {
-      $params['pageNumber'] = (int) $validated['pageNumber'];
-    }
+    $params = $this->buildRidesQueryParams($id, $validated);
 
     try {
       $rides = $this->autoFleetService->getRides($params);

@@ -34,6 +34,7 @@ type StopPoint = {
   orderInParent: number;
   description: string;
   beforeTime?: string | null;
+  afterTime?: string | null;
   plannedArrivalTime?: string | null;
   eta?: string | null;
   arrivedAt?: string | null;
@@ -46,8 +47,9 @@ type Ride = {
   priceCurrency: string;
   priceAmount: number;
   createdAt: string;
-  /** AutoFleet: set when the ride is finalized (use for “ride completed” time). */
   finalizedAt?: string | null;
+  serviceId?: string | null;
+  serviceDisplayName?: string | null;
   stopPoints: StopPoint[];
   payment?: { id: string; state?: string; paymentMethod?: { name?: string } } | null;
   paymentBreakdown?: { preAuth?: number; captured?: number; refunded?: number } | null;
@@ -62,7 +64,30 @@ function rideCompletedAtIso(ride: Ride): string | null {
   return null;
 }
 
-/** Payload from Chatwoot Dashboard Apps (`window.postMessage`). */
+function normalizeRideState(state: string): string {
+  return state.trim().toLowerCase();
+}
+
+function rideStateBadge(state: string): { label: string; variant: React.ComponentProps<typeof Badge>["variant"]; className?: string } {
+  const s = normalizeRideState(state);
+  if (s === "completed") return { label: "Completed", variant: "secondary", className: "bg-emerald-500/15 text-emerald-200" };
+  if (s === "canceled") return { label: "Canceled", variant: "secondary", className: "bg-amber-500/15 text-amber-200" };
+  if (!s) return { label: "—", variant: "secondary", className: "bg-white/10 text-zinc-100" };
+  const label = s.replace(/[_-]+/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+  return { label, variant: "secondary", className: "bg-white/10 text-zinc-100" };
+}
+
+function dropoffStatusRow(ride: Ride): { label: string; time: string } {
+  const s = normalizeRideState(ride.state);
+  if (s === "canceled") {
+    return { label: "Ride Canceled", time: formatDateTime(rideCompletedAtIso(ride)) };
+  }
+  if (s === "completed") {
+    return { label: "Ride completed", time: formatDateTime(rideCompletedAtIso(ride)) };
+  }
+  return { label: `Ride ${s}`, time: formatDateTime(rideCompletedAtIso(ride)) };
+}
+
 type ChatwootSocialProfiles = {
   github?: string;
   twitter?: string;
@@ -151,7 +176,6 @@ const rideDateTimeFormatOptions = {
   year: "numeric" as const,
   hour: "numeric" as const,
   minute: "2-digit" as const,
-  // Prevent hydration mismatches between server (often UTC) and client (user locale).
   timeZone: "UTC",
 };
 
@@ -162,7 +186,6 @@ function formatDateTime(iso?: string | null) {
   return new Intl.DateTimeFormat("en-CA", rideDateTimeFormatOptions).format(d);
 }
 
-/** Ride card left column: bold "Mar 29", grey year below (matches dashboard mock). */
 function formatRideCardDateParts(iso?: string | null): { monthDay: string; year: string } | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -189,6 +212,37 @@ function formatTimeOnly(iso?: string | null) {
     minute: rideDateTimeFormatOptions.minute,
     timeZone: rideDateTimeFormatOptions.timeZone,
   }).format(d);
+}
+
+function formatDateOnly(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-CA", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+    timeZone: rideDateTimeFormatOptions.timeZone,
+  }).format(d);
+}
+
+function formatPickupPrebookWindow(afterTime?: string | null, beforeTime?: string | null): string | null {
+  const a = typeof afterTime === "string" ? afterTime.trim() : "";
+  const b = typeof beforeTime === "string" ? beforeTime.trim() : "";
+  if (!a || !b) return null;
+  const start = new Date(a);
+  const end = new Date(b);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  if (end.getTime() <= start.getTime()) return null;
+
+  const sameUtcDay =
+    start.getUTCFullYear() === end.getUTCFullYear() &&
+    start.getUTCMonth() === end.getUTCMonth() &&
+    start.getUTCDate() === end.getUTCDate();
+
+  if (sameUtcDay) {
+    return `${formatDateOnly(a)}, ${formatTimeOnly(a)} – ${formatTimeOnly(b)}`;
+  }
+  return `${formatDateTime(a)} – ${formatDateTime(b)}`;
 }
 
 function getPickupStop(ride: Ride) {
@@ -416,7 +470,6 @@ function useClientRides(
   }, [opts.embedded, opts.hasContext, opts.adminKey, derived?.displayName, derived?.email, derived?.phone]);
 
   React.useEffect(() => {
-    // In the Chatwoot iframe, wait for `appContext` (contact / conversation) before calling the API.
     if (opts.embedded && !opts.hasContext) {
       setRides([]);
       setError(null);
@@ -511,6 +564,82 @@ function useClientRides(
   return { rides, loading, error, hasMore, loadMore };
 }
 
+type ServiceNameById = Record<string, string>;
+
+function readServiceDisplayName(raw: unknown): string | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const displayName = o.displayName;
+  if (typeof displayName === "string" && displayName.trim() !== "") return displayName.trim();
+  const name = o.name;
+  if (typeof name === "string" && name.trim() !== "") return name.trim();
+  return null;
+}
+
+function useRideServices(
+  rides: Ride[],
+  opts: { adminKey: string; enabled: boolean },
+): { namesById: ServiceNameById; loading: boolean } {
+  const [namesById, setNamesById] = React.useState<ServiceNameById>({});
+  const [loading, setLoading] = React.useState(false);
+  const namesRef = React.useRef<ServiceNameById>({});
+
+  React.useEffect(() => {
+    namesRef.current = namesById;
+  }, [namesById]);
+
+  React.useEffect(() => {
+    if (!opts.enabled) return;
+    if (!opts.adminKey) return;
+
+    const ids = Array.from(
+      new Set(
+        rides
+          .map((r) => (typeof r.serviceId === "string" ? r.serviceId.trim() : ""))
+          .filter(Boolean),
+      ),
+    );
+    const missing = ids.filter((id) => !namesRef.current[id]);
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    setLoading(true);
+
+    const qs = new URLSearchParams({ "admin-key": opts.adminKey });
+
+    Promise.all(
+      missing.map(async (id) => {
+        const res = await fetch(`/api/services/${encodeURIComponent(id)}?${qs.toString()}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const data: unknown = await res.json().catch(() => null);
+        if (!res.ok) return { id, name: null as string | null };
+        return { id, name: readServiceDisplayName(data) };
+      }),
+    )
+      .then((pairs) => {
+        if (cancelled) return;
+        setNamesById((prev) => {
+          const next = { ...prev };
+          for (const p of pairs) {
+            if (p.name) next[p.id] = p.name;
+          }
+          return next;
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rides, opts.adminKey, opts.enabled]);
+
+  return { namesById, loading };
+}
+
 function useChatwootAppContext() {
   const [ctx, setCtx] = React.useState<AppContext | null>(null);
   const [embedded, setEmbedded] = React.useState(false);
@@ -602,7 +731,7 @@ function DriverPopover({ ride }: { ride: Ride }) {
   );
 }
 
-function RideRow({ ride }: { ride: Ride }) {
+function RideRow({ ride, serviceName }: { ride: Ride; serviceName: string | null }) {
   const pickup = getPickupStop(ride);
   const dropoff = getDropoffStop(ride);
   const midStops = getIntermediateStops(ride);
@@ -612,21 +741,21 @@ function RideRow({ ride }: { ride: Ride }) {
   const stripeUrl = buildStripePaymentUrl(ride);
   const bookingUrl = buildAutofleetBookingUrl(ride);
 
-  const vehicleLabel =
-    ride.vehicle?.model?.name ||
-    ride.vehicle?.model?.class ||
-    (ride.vehicle ? "Vehicle" : null) ||
-    "—";
+  const bookedServiceLabel = serviceName || "—";
 
   const pickupShort = pickup?.description?.split(",")[0] ?? "Pickup";
   const dropoffShort = dropoff?.description?.split(",")[0] ?? "Dropoff";
   const dateParts = formatRideCardDateParts(ride.createdAt);
+  const pickupPrebookWindow = pickup
+    ? formatPickupPrebookWindow(pickup.afterTime ?? null, pickup.beforeTime ?? null)
+    : null;
+  const stateBadge = rideStateBadge(ride.state ?? "");
+  const dropoffStatus = dropoffStatusRow(ride);
 
   return (
     <Card className="overflow-hidden rounded-2xl border-0 bg-widget-panel shadow-widget-card ring-1 ring-widget-ring">
       <div className="p-4 sm:p-5">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:gap-6">
-          {/* Column 1: calendar button + Mar 29 / year + rule + time + vertical rule */}
           <div className="flex shrink-0 gap-3 border-b border-white/10 pb-4 lg:w-[112px] lg:flex-col lg:gap-2.5 lg:border-b-0 lg:border-r lg:border-white/10 lg:pb-0 lg:pr-5">
             <div
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-widget-tile ring-1 ring-sky-500/35"
@@ -647,14 +776,18 @@ function RideRow({ ride }: { ride: Ride }) {
               <div className="text-widget-meta font-normal leading-tight text-zinc-400">
                 {formatTimeOnly(ride.createdAt)}
               </div>
+              <div className="pt-1">
+                <Badge variant={stateBadge.variant} className={cn("h-6 px-2.5 text-xs font-semibold", stateBadge.className)}>
+                  {stateBadge.label}
+                </Badge>
+              </div>
             </div>
           </div>
 
-          {/* Column 2: route rows (icon + address) + dashed spine + driver/vehicle one row */}
           <div className="min-w-0 flex-1">
-            <div className="space-y-0">
-              {pickup ? (
-                <div className="flex items-start gap-3">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                {pickup ? (
                   <Popover>
                     <PopoverTrigger asChild>
                       <button
@@ -677,57 +810,69 @@ function RideRow({ ride }: { ride: Ride }) {
                         <div className="grid gap-1 text-xs text-white/75">
                           <div className="flex justify-between gap-4">
                             <span>Booking time</span>
-                            <span className="font-semibold text-white">{formatDateTime(ride.createdAt)}</span>
+                            <span className="text-right font-semibold text-white">{formatDateTime(ride.createdAt)}</span>
+                          </div>
+                          {pickupPrebookWindow ? (
+                            <div className="flex justify-between gap-4">
+                              <span>Prebooked time</span>
+                              <span className="text-right font-semibold tabular-nums text-white">{pickupPrebookWindow}</span>
+                            </div>
+                          ) : null}
+                          <div className="flex justify-between gap-4">
+                            <span>Arrived time</span>
+                            <span className="text-right font-semibold text-white">{formatDateTime(pickup.arrivedAt ?? null)}</span>
                           </div>
                           <div className="flex justify-between gap-4">
-                            <span>Arrival</span>
-                            <span className="font-semibold text-white">{formatDateTime(pickup.arrivedAt ?? null)}</span>
+                            <span>On board time</span>
+                            <span className="text-right font-semibold text-white">{formatDateTime(pickup.completedAt ?? null)}</span>
                           </div>
                         </div>
                       </div>
                     </PopoverContent>
                   </Popover>
-                  <p className="min-w-0 flex-1 pt-1 text-base font-bold leading-snug text-white sm:text-lg">{pickupShort}</p>
-                </div>
-              ) : null}
-
-              {pickup && (midStops.length > 0 || dropoff) ? (
-                <div className="ml-4 flex h-5 w-0 justify-center border-l border-dashed border-white/25" aria-hidden />
-              ) : null}
-
-              {midStops.map((s) => (
-                <React.Fragment key={s.id}>
-                  <div className="flex items-start gap-3">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-500/45 bg-widget-route-icon text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40"
-                          aria-label="Stop details"
-                        >
-                          <MapPin className="h-3.5 w-3.5" strokeWidth={2.25} />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        side="bottom"
-                        align="start"
-                        sideOffset={8}
-                        className="w-[min(100vw-2rem,420px)] max-w-[420px] border-0 bg-zinc-900 p-3 text-sm text-white shadow-widget-popover"
-                      >
-                        <div className="space-y-2">
-                          <div className="text-base font-semibold text-white">Stop</div>
-                          <div className="text-white/90">{s.description}</div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    <p className="min-w-0 flex-1 pt-1 text-sm font-semibold leading-snug text-white/90">{s.description?.split(",")[0] ?? "Stop"}</p>
+                ) : (
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/15 bg-widget-route-icon text-zinc-500">
+                    <MapPin className="h-4 w-4" strokeWidth={2.25} />
                   </div>
-                  <div className="ml-4 flex h-5 w-0 justify-center border-l border-dashed border-white/25" aria-hidden />
-                </React.Fragment>
-              ))}
+                )}
 
-              {dropoff ? (
-                <div className="flex items-start gap-3">
+                {midStops.length > 0 ? (
+                  <>
+                    <div className="h-px flex-1 border-t border-dashed border-white/25" aria-hidden />
+                    {midStops.map((s) => (
+                      <React.Fragment key={s.id}>
+                        <div className="h-px w-8 border-t border-dashed border-white/25" aria-hidden />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-500/45 bg-widget-route-icon text-amber-400 transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40"
+                              aria-label="Stop details"
+                            >
+                              <MapPin className="h-3.5 w-3.5" strokeWidth={2.25} />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            side="bottom"
+                            align="start"
+                            sideOffset={8}
+                            className="w-[min(100vw-2rem,420px)] max-w-[420px] border-0 bg-zinc-900 p-3 text-sm text-white shadow-widget-popover"
+                          >
+                            <div className="space-y-2">
+                              <div className="text-base font-semibold text-white">Stop</div>
+                              <div className="text-white/90">{s.description}</div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </React.Fragment>
+                    ))}
+                    <div className="h-px flex-1 border-t border-dashed border-white/25" aria-hidden />
+                  </>
+                ) : (
+                  <div className="h-px flex-1 border-t border-dashed border-white/25" aria-hidden />
+                )}
+
+                {dropoff ? (
                   <Popover>
                     <PopoverTrigger asChild>
                       <button
@@ -749,16 +894,32 @@ function RideRow({ ride }: { ride: Ride }) {
                         <div className="text-white/90">{dropoff.description}</div>
                         <div className="border-t border-white/10 pt-2 text-xs">
                           <div className="flex justify-between gap-4 text-white/75">
-                            <span>Ride completed</span>
-                            <span className="font-semibold text-white">{formatDateTime(rideCompletedAtIso(ride))}</span>
+                            <span>{dropoffStatus.label}</span>
+                            <span className="font-semibold text-white">{dropoffStatus.time}</span>
                           </div>
+                          {normalizeRideState(ride.state) === "canceled" && ride.priceAmount > 0 ? (
+                            <div className="mt-1 flex justify-between gap-4 text-white/75">
+                              <span>Cancellation fee</span>
+                              <span className="font-semibold text-white">
+                                {formatMoney(ride.priceAmount, ride.priceCurrency)}
+                              </span>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     </PopoverContent>
                   </Popover>
-                  <p className="min-w-0 flex-1 pt-1 text-base font-bold leading-snug text-white sm:text-lg">{dropoffShort}</p>
-                </div>
-              ) : null}
+                ) : (
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/15 bg-widget-route-icon text-zinc-500">
+                    <FlagTriangleRight className="h-4 w-4" strokeWidth={2.25} />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex min-w-0 items-center justify-between gap-4">
+                <div className="min-w-0 text-base font-bold leading-snug text-white sm:text-lg">{pickupShort}</div>
+                <div className="min-w-0 text-right text-base font-bold leading-snug text-white sm:text-lg">{dropoffShort}</div>
+              </div>
 
               <div className="mt-4 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-widget-meta text-zinc-400 sm:text-sm">
                 <span className="inline-flex items-center gap-1.5">
@@ -773,14 +934,13 @@ function RideRow({ ride }: { ride: Ride }) {
                 </span>
                 <span className="inline-flex min-w-0 items-center gap-1.5">
                   <Car className="h-3.5 w-3.5 shrink-0 text-zinc-500" aria-hidden />
-                  <span className="text-zinc-500">Vehicle:</span>
-                  <span className="font-medium text-zinc-300">{vehicleLabel}</span>
+                  <span className="text-zinc-500">Type:</span>
+                  <span className="font-medium text-zinc-300">{bookedServiceLabel}</span>
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Column 3: price + actions */}
           <div className="flex min-w-0 justify-between shrink-0 flex-col gap-3 border-t border-white/10 pt-4 lg:min-w-[240px] lg:w-[min(100%,280px)] lg:border-t-0 lg:pt-0">
             <div className="flex w-full items-start justify-between gap-3">
               <div className="ml-auto flex items-center gap-1.5">
@@ -1003,7 +1163,6 @@ function CustomerHeroAvatar({
 }>) {
   if (thumbnail) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={thumbnail}
         alt=""
@@ -1230,6 +1389,10 @@ function HomeContent() {
     hasContext,
     adminKey,
   });
+  const { namesById: serviceNamesById } = useRideServices(rides, {
+    adminKey,
+    enabled: embedded ? hasContext : true,
+  });
 
   let ridesStatusNode: React.ReactNode = null;
   if (ridesLoading) {
@@ -1256,7 +1419,11 @@ function HomeContent() {
 
         <div className="mt-3 space-y-3 sm:mt-4">
           {rides.map((ride) => (
-            <RideRow key={ride.id} ride={ride} />
+            <RideRow
+              key={ride.id}
+              ride={ride}
+              serviceName={ride.serviceId ? serviceNamesById[String(ride.serviceId)] ?? null : null}
+            />
           ))}
         </div>
 

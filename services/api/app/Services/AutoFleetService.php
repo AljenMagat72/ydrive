@@ -9,6 +9,7 @@ class AutoFleetService
 {
   private const TOKEN_CACHE_KEY = 'autofleet_token';
   private const REFRESH_TOKEN_CACHE_KEY = 'autofleet_refresh_token';
+  private const SERVICE_CACHE_PREFIX = 'autofleet_service:';
 
   private string $refreshToken;
   private ?string $token = null;
@@ -90,6 +91,19 @@ class AutoFleetService
     });
 
     return $response->json();
+  }
+
+  public function getServiceById(string $serviceId)
+  {
+    $cacheKey = self::SERVICE_CACHE_PREFIX . $serviceId;
+
+    return Cache::remember($cacheKey, now()->addHours(6), function () use ($serviceId) {
+      $response = $this->makeAuthenticatedRequest(function ($client) use ($serviceId) {
+        return $client->get("v1/services/$serviceId");
+      });
+
+      return $response->json();
+    });
   }
 
   public function updateDriver(string $driverId, array $params)
