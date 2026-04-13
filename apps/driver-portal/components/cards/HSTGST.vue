@@ -108,7 +108,7 @@ const handleAction = async () => {
           </template>
           <template v-else>
             <component :is="isEditing ? Send : Mail" class="w-4 h-4" />
-            <span>{{ isEditing ? 'Send Request' : 'Request Tax Update' }}</span>
+            <span>{{ isEditing ? 'Send Request' : 'Submit HST/GST Number' }}</span>
           </template>
         </button>
         <p class="text-[10px] text-gray-500 text-center uppercase tracking-widest mt-2">

@@ -7,12 +7,14 @@ const props = defineProps<{
   details: any
 }>()
 
-const { bankName, bankAccount, updateProfile, refresh } = useZoho();
+const { bankName, bankAccount, institution, transit, updateProfile, refresh } = useZoho();
 
 const isEditing = ref(false);
 const isSaving = ref(false);
 const newBankName = ref('');
 const newBankAccount = ref('');
+const newInstitution = ref('');
+const newTransit = ref('');
 
 // Toast State
 const showToast = ref(false);
@@ -30,6 +32,8 @@ const handleAction = async () => {
   if (!isEditing.value) {
     newBankName.value = bankName.value !== '---' ? bankName.value : '';
     newBankAccount.value = bankAccount.value !== '---' ? bankAccount.value : '';
+    newTransit.value = transit.value !== '---' ? transit.value : '';
+    newInstitution.value = institution.value !== '---' ? institution.value : '';
     isEditing.value = true;
     return;
   }
@@ -39,7 +43,9 @@ const handleAction = async () => {
     try {
       await updateProfile({
         Bank_Name: newBankName.value,
-        Bank_Account: newBankAccount.value
+        Bank_Account: newBankAccount.value,
+        Institution: newInstitution.value,
+        Transit: newTransit.value
       });
 
       triggerToast('Banking details submitted successfully!', 'success');
@@ -78,7 +84,15 @@ const handleAction = async () => {
         <div class="space-y-1">
           <p class="text-sm flex justify-between gap-2">
             <span class="font-semibold dark:text-white">Bank Name:</span> 
-            <span class="truncate text-right dark:text-white">{{ bankName || 'yDrive Bank' }}</span>
+            <span class="truncate text-right dark:text-white">{{ bankName || '---' }}</span>
+          </p>
+          <p class="text-sm flex justify-between gap-2">
+            <span class="font-semibold dark:text-white">Institution:</span> 
+            <span class="text-right dark:text-white">{{ institution || '---' }}</span>
+          </p>
+          <p class="text-sm flex justify-between gap-2">
+            <span class="font-semibold dark:text-white">Transit:</span> 
+            <span class="text-right dark:text-white">{{ transit || '---' }}</span>
           </p>
           <p class="text-sm flex justify-between gap-2">
             <span class="font-semibold dark:text-white">Bank Account:</span> 
@@ -96,6 +110,18 @@ const handleAction = async () => {
               v-model="newBankName"
               type="text"
               placeholder="Bank Name"
+              class="w-full bg-gray-50 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 text-black shadow-blue"
+            />
+            <input 
+              v-model="newInstitution"
+              type="text"
+              placeholder="Instition Number"
+              class="w-full bg-gray-50 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 text-black shadow-blue"
+            />
+            <input 
+              v-model="newTransit"
+              type="text"
+              placeholder="Transit Number"
               class="w-full bg-gray-50 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 text-black shadow-blue"
             />
             <input 

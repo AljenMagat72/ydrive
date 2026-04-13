@@ -12,6 +12,8 @@ interface ZohoDriver {
   Year?: string | number;
   Bank_Name?: string;
   Bank_Account?: string;
+  Transit?: string;
+  Institution?: string;
   HSTGST?: string;
   License_Class?: string;
   License_Exp?: string;
@@ -146,6 +148,8 @@ export function useZoho() {
     // --- Banking & Tax ---
     bankName: computed(() => driverDetails.value?.Bank_Name || '---'),
     bankAccount: computed(() => driverDetails.value?.Bank_Account || '---'),
+    transit: computed(() => driverDetails.value?.Transit || '---'),
+    institution: computed(() => driverDetails.value?.Institution || '---'),
     hstGst: computed(() => driverDetails.value?.HSTGST || '---'),
 
     // --- Licenses & Compliance ---

@@ -57,6 +57,8 @@ class ZohoController extends Controller
                     'Year'               => $z['Year'] ?? null,
                     'Bank_Name'          => $z['Bank_Name'] ?? null,
                     'Bank_Account'       => $z['Account'] ?? null,
+                    'Transit'            => $z['Transit'] ?? null,
+                    'Institution'        => $z['Institution'] ?? null,
                     'HSTGST'             => $z['HST_GST'] ?? null,
                     'License_Class'      => $z['License_Class'] ?? null,
                     'License_Exp'        => $z['License_Exp'] ?? null,
@@ -138,12 +140,16 @@ public function updateDocument(Request $request): JsonResponse
         $validated = $request->validate([
             'Bank_Name'    => 'nullable|string',
             'Bank_Account' => 'nullable|string',
+            'Institution'  => 'nullable|string',
+            'Transit'       => 'nullable|string',
             'HST_GST'       => 'nullable|string',
         ]);
 
         $mapping = [
             'Bank_Name'    => 'TBU_Bank_Name',
             'Bank_Account' => 'TBU_Bank_Account',
+            'Institution' => 'TBU_Institution',
+            'Transit' => 'TBU_Transit',
             'HST_GST'       => 'TBU_HST_GST',
         ];
 
