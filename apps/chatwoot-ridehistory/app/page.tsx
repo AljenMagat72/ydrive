@@ -277,6 +277,34 @@ function isJsonString(s: string) {
   return (t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"));
 }
 
+type ReactNativeWebViewBridge = {
+  postMessage?: (message: string) => void;
+};
+
+type DocumentWithMessageEvent = Document & {
+  addEventListener?: (type: "message", listener: (event: MessageEvent) => void) => void;
+  removeEventListener?: (type: "message", listener: (event: MessageEvent) => void) => void;
+};
+
+const CHATWOOT_LAST_CTX_KEY = "chatwoot-dashboard-app:lastAppContext";
+
+function safeSessionGet(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSessionSet(key: string, value: string): boolean {
+  try {
+    sessionStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function parseDashboardAppPayload(data: unknown): AppContext | null {
   let raw: unknown = data;
   if (typeof raw === "string") {
@@ -288,9 +316,15 @@ function parseDashboardAppPayload(data: unknown): AppContext | null {
     }
   }
   if (!raw || typeof raw !== "object") return null;
-  const obj = raw as { event?: string };
-  if (obj.event !== "appContext") return null;
-  return raw as AppContext;
+  const obj = raw as Record<string, unknown>;
+  const ev =
+    (typeof obj.event === "string" && obj.event) ||
+    (typeof obj.type === "string" && obj.type) ||
+    (typeof obj.name === "string" && obj.name) ||
+    "";
+  if (ev !== "appContext") return null;
+  const dataObj = obj.data && typeof obj.data === "object" ? (obj.data as AppContext["data"]) : undefined;
+  return { event: "appContext", data: dataObj } as AppContext;
 }
 
 function initialsFromName(name: string) {
@@ -643,27 +677,70 @@ function useRideServices(
 function useChatwootAppContext() {
   const [ctx, setCtx] = React.useState<AppContext | null>(null);
   const [embedded, setEmbedded] = React.useState(false);
+  const hasCtxRef = React.useRef(false);
 
   React.useEffect(() => {
     setEmbedded(typeof window !== "undefined" && window.parent !== window);
   }, []);
 
   React.useEffect(() => {
+    const raw = safeSessionGet(CHATWOOT_LAST_CTX_KEY);
+    if (raw) {
+      const restored = parseDashboardAppPayload(raw);
+      if (restored?.data) {
+        setCtx(restored);
+        setEmbedded(true);
+        hasCtxRef.current = true;
+      }
+    }
+
     function onMessage(event: MessageEvent) {
       const parsed = parseDashboardAppPayload(event.data);
-      if (parsed?.data) setCtx(parsed);
+      if (parsed?.data) {
+        setCtx(parsed);
+        setEmbedded(true);
+        hasCtxRef.current = true;
+        safeSessionSet(CHATWOOT_LAST_CTX_KEY, JSON.stringify(parsed));
+      }
     }
+
     window.addEventListener("message", onMessage);
-    if (typeof window !== "undefined" && window.parent !== window) {
-      window.parent.postMessage("chatwoot-dashboard-app:fetch-info", "*");
-    }
-    return () => window.removeEventListener("message", onMessage);
+    (document as DocumentWithMessageEvent).addEventListener?.("message", onMessage);
+
+    const requestInfo = () => {
+      window.parent?.postMessage?.("chatwoot-dashboard-app:fetch-info", "*");
+      (window as unknown as { ReactNativeWebView?: ReactNativeWebViewBridge }).ReactNativeWebView?.postMessage?.(
+        "chatwoot-dashboard-app:fetch-info",
+      );
+    };
+
+    requestInfo();
+    let tries = 0;
+    const interval = window.setInterval(() => {
+      if (hasCtxRef.current) {
+        window.clearInterval(interval);
+        return;
+      }
+      tries += 1;
+      if (tries > 12) {
+        window.clearInterval(interval);
+        return;
+      }
+      requestInfo();
+    }, 500);
+
+    return () => {
+      window.removeEventListener("message", onMessage);
+      (document as DocumentWithMessageEvent).removeEventListener?.("message", onMessage);
+      window.clearInterval(interval);
+    };
   }, []);
 
   const refresh = React.useCallback(() => {
-    if (typeof window !== "undefined" && window.parent !== window) {
-      window.parent.postMessage("chatwoot-dashboard-app:fetch-info", "*");
-    }
+    window.parent?.postMessage?.("chatwoot-dashboard-app:fetch-info", "*");
+    (window as unknown as { ReactNativeWebView?: ReactNativeWebViewBridge }).ReactNativeWebView?.postMessage?.(
+      "chatwoot-dashboard-app:fetch-info",
+    );
   }, []);
 
   return { ctx, embedded, refresh };
@@ -763,20 +840,22 @@ function RideRow({ ride, serviceName }: { ride: Ride; serviceName: string | null
             >
               <CalendarDays className="h-4 w-4 text-sky-400" strokeWidth={1.75} />
             </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5 lg:flex-initial">
-              {dateParts ? (
-                <>
-                  <div className="text-widget-date font-bold leading-none tracking-tight text-white">{dateParts.monthDay}</div>
-                  <div className="text-widget-meta font-normal leading-tight text-zinc-400">{dateParts.year}</div>
-                </>
-              ) : (
-                <div className="text-sm text-zinc-400">—</div>
-              )}
-              <div className="h-px w-11 max-w-full bg-white/20" />
-              <div className="text-widget-meta font-normal leading-tight text-zinc-400">
-                {formatTimeOnly(ride.createdAt)}
+            <div className="w-full justify-between flex flex-row sm:flex-col gap-1.5">
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5 lg:flex-initial">
+                {dateParts ? (
+                  <>
+                    <div className="text-widget-date font-bold leading-none tracking-tight text-white">{dateParts.monthDay}</div>
+                    <div className="text-widget-meta font-normal leading-tight text-zinc-400">{dateParts.year}</div>
+                  </>
+                ) : (
+                  <div className="text-sm text-zinc-400">—</div>
+                )}
+                <div className="h-px w-11 max-w-full bg-white/20" />
+                <div className="text-widget-meta font-normal leading-tight text-zinc-400">
+                  {formatTimeOnly(ride.createdAt)}
+                </div>
               </div>
-              <div className="pt-1">
+              <div className="sm:pt-1">
                 <Badge variant={stateBadge.variant} className={cn("h-6 px-2.5 text-xs font-semibold", stateBadge.className)}>
                   {stateBadge.label}
                 </Badge>
