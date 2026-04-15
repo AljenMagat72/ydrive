@@ -245,6 +245,13 @@ function formatPickupPrebookWindow(afterTime?: string | null, beforeTime?: strin
   return `${formatDateTime(a)} – ${formatDateTime(b)}`;
 }
 
+function midStopTimeRows(stop: StopPoint): Array<{ label: string; value: string }> {
+  const rows: Array<{ label: string; value: string }> = [];
+  if (stop.arrivedAt) rows.push({ label: "Stop Time", value: formatDateTime(stop.arrivedAt) });
+  if (stop.completedAt) rows.push({ label: "Complete Time", value: formatDateTime(stop.completedAt) });
+  return rows;
+}
+
 function getPickupStop(ride: Ride) {
   const sorted = [...ride.stopPoints].sort(byOrder);
   return sorted.find((s) => s.type === "pickup") ?? sorted[0] ?? null;
@@ -915,41 +922,46 @@ function RideRow({ ride, serviceName }: { ride: Ride; serviceName: string | null
                   </div>
                 )}
 
-                {midStops.length > 0 ? (
-                  <>
-                    <div className="h-px flex-1 border-t border-dashed border-white/25" aria-hidden />
-                    {midStops.map((s) => (
-                      <React.Fragment key={s.id}>
-                        <div className="h-px w-8 border-t border-dashed border-white/25" aria-hidden />
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              type="button"
-                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-500/45 bg-widget-route-icon text-amber-400 transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40"
-                              aria-label="Stop details"
-                            >
-                              <MapPin className="h-3.5 w-3.5" strokeWidth={2.25} />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            side="bottom"
-                            align="start"
-                            sideOffset={8}
-                            className="w-[min(100vw-2rem,420px)] max-w-[420px] border-0 bg-zinc-900 p-3 text-sm text-white shadow-widget-popover"
-                          >
-                            <div className="space-y-2">
-                              <div className="text-base font-semibold text-white">Stop</div>
-                              <div className="text-white/90">{s.description}</div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </React.Fragment>
-                    ))}
-                    <div className="h-px flex-1 border-t border-dashed border-white/25" aria-hidden />
-                  </>
-                ) : (
+                <>
                   <div className="h-px flex-1 border-t border-dashed border-white/25" aria-hidden />
-                )}
+                  {midStops.map((s) => (
+                    <React.Fragment key={s.id}>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-500/45 bg-widget-route-icon text-amber-400 transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40"
+                            aria-label="Stop details"
+                          >
+                            <MapPin className="h-3.5 w-3.5" strokeWidth={2.25} />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          side="bottom"
+                          align="start"
+                          sideOffset={8}
+                          className="w-[min(100vw-2rem,420px)] max-w-[420px] border-0 bg-zinc-900 p-3 text-sm text-white shadow-widget-popover"
+                        >
+                          <div className="space-y-2">
+                            <div className="text-base font-semibold text-white">Stop</div>
+                            <div className="text-white/90">{s.description}</div>
+                            {midStopTimeRows(s).length > 0 ? (
+                              <div className="grid gap-1 border-t border-white/10 pt-2 text-xs text-white/75">
+                                {midStopTimeRows(s).map((r) => (
+                                  <div key={r.label} className="flex justify-between gap-4">
+                                    <span>{r.label}</span>
+                                    <span className="text-right font-semibold text-white">{r.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <div className="h-px flex-1 border-t border-dashed border-white/25" aria-hidden />
+                    </React.Fragment>
+                  ))}
+                </>
 
                 {dropoff ? (
                   <Popover>
