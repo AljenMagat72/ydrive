@@ -269,12 +269,6 @@ function getIntermediateStops(ride: Ride) {
   return sorted.slice(1, -1);
 }
 
-function buildStripePaymentUrl(ride: Ride) {
-  const paymentId = ride.payment?.id;
-  if (!paymentId) return null;
-  return `https://dashboard.stripe.com/payments/${paymentId}`;
-}
-
 function buildAutofleetBookingUrl(ride: Ride) {
   return `https://control.autofleet.io/6FnkvuL1DSM3pe847fDhCX/ride/${ride.id}`;
 }
@@ -815,14 +809,49 @@ function DriverPopover({ ride }: { ride: Ride }) {
   );
 }
 
-function RideRow({ ride, serviceName }: { ride: Ride; serviceName: string | null }) {
+function RideRow({ ride, serviceName, adminKey }: { ride: Ride; serviceName: string | null; adminKey: string }) {
   const pickup = getPickupStop(ride);
   const dropoff = getDropoffStop(ride);
   const midStops = getIntermediateStops(ride);
 
   const [priceOpen, setPriceOpen] = React.useState(false);
 
-  const stripeUrl = buildStripePaymentUrl(ride);
+  const paymentId = ride.payment?.id ?? "";
+  const [stripeUrl, setStripeUrl] = React.useState<string | null>(null);
+  const [stripeLoading, setStripeLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    setStripeUrl(null);
+  }, [paymentId]);
+
+  const resolveStripeUrl = React.useCallback(async () => {
+    if (!paymentId || stripeLoading) return null;
+    if (!adminKey) return null;
+
+    setStripeLoading(true);
+    try {
+      const qs = new URLSearchParams({ "admin-key": adminKey, paymentId });
+      const res = await fetch(`/api/stripe/payment-dashboard-url?${qs.toString()}`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      const data = (await res.json().catch(() => ({}))) as { url?: string; message?: string };
+      const url = res.ok && typeof data.url === "string" ? data.url : null;
+      if (url) setStripeUrl(url);
+      return url;
+    } finally {
+      setStripeLoading(false);
+    }
+  }, [adminKey, paymentId, stripeLoading]);
+
+  const onOpenPaymentClick = React.useCallback(async () => {
+    if (stripeUrl) {
+      window.open(stripeUrl, "_blank", "noreferrer");
+      return;
+    }
+    const url = await resolveStripeUrl();
+    if (url) window.open(url, "_blank", "noreferrer");
+  }, [resolveStripeUrl, stripeUrl]);
   const bookingUrl = buildAutofleetBookingUrl(ride);
 
   const bookedServiceLabel = serviceName || "—";
@@ -1050,19 +1079,31 @@ function RideRow({ ride, serviceName }: { ride: Ride; serviceName: string | null
             </div>
 
             <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:justify-end sm:gap-3">
-              <a
-                href={stripeUrl ?? "#"}
-                target="_blank"
-                rel="noreferrer"
-                aria-disabled={!stripeUrl}
-                className={cn(
-                  "inline-flex h-auto min-h-12 w-full min-w-0 shrink items-center justify-center gap-2 whitespace-normal rounded-sm border border-white/15 bg-widget-action-muted px-4 py-3 text-center text-base font-medium leading-tight text-zinc-300 shadow-none hover:bg-widget-surface-6 hover:text-zinc-100 sm:min-h-10 sm:w-auto sm:min-w-40 sm:px-4 sm:py-2 sm:text-sm sm:leading-none sm:whitespace-nowrap",
-                  !stripeUrl && "pointer-events-none opacity-45",
-                )}
-              >
-                <Wallet className="h-5 w-5 shrink-0 opacity-90 sm:h-4 sm:w-4" aria-hidden />
-                <span>Open Payment</span>
-              </a>
+              {stripeUrl ? (
+                <a
+                  href={stripeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={cn(
+                    "inline-flex h-auto min-h-12 w-full min-w-0 shrink items-center justify-center gap-2 whitespace-normal rounded-sm border border-white/15 bg-widget-action-muted px-4 py-3 text-center text-base font-medium leading-tight text-zinc-300 shadow-none hover:bg-widget-surface-6 hover:text-zinc-100 sm:min-h-10 sm:w-auto sm:min-w-40 sm:px-4 sm:py-2 sm:text-sm sm:leading-none sm:whitespace-nowrap",
+                  )}
+                >
+                  <Wallet className="h-5 w-5 shrink-0 opacity-90 sm:h-4 sm:w-4" aria-hidden />
+                  <span>Open Payment</span>
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onOpenPaymentClick}
+                  disabled={!adminKey || stripeLoading}
+                  className={cn(
+                    "cursor-pointer inline-flex h-auto min-h-12 w-full min-w-0 shrink items-center justify-center gap-2 whitespace-normal rounded-sm border border-white/15 bg-widget-action-muted px-4 py-3 text-center text-base font-medium leading-tight text-zinc-300 shadow-none hover:bg-widget-surface-6 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-45 sm:min-h-10 sm:w-auto sm:min-w-40 sm:px-4 sm:py-2 sm:text-sm sm:leading-none sm:whitespace-nowrap",
+                  )}
+                >
+                  <Wallet className="h-5 w-5 shrink-0 opacity-90 sm:h-4 sm:w-4" aria-hidden />
+                  <span>{stripeLoading ? "Loading…" : "Open Payment"}</span>
+                </button>
+              )}
               <a
                 href={bookingUrl}
                 target="_blank"
@@ -1514,6 +1555,7 @@ function HomeContent() {
               key={ride.id}
               ride={ride}
               serviceName={ride.serviceId ? serviceNamesById[String(ride.serviceId)] ?? null : null}
+              adminKey={adminKey}
             />
           ))}
         </div>
@@ -1522,7 +1564,7 @@ function HomeContent() {
           <Button
             type="button"
             variant="ghost"
-            className="h-10 px-4 text-base font-semibold text-white hover:bg-white/10 disabled:opacity-50"
+            className="cursor-pointer h-10 px-4 text-base font-semibold text-white disabled:opacity-50"
             disabled={ridesLoading || !!ridesError || !hasMore}
             onClick={loadMore}
           >

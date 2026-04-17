@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\StripeController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\AutoFleet\AutoFleetWebHookController;
 use App\Http\Controllers\AdminScheduleController;
@@ -52,6 +53,7 @@ Route::prefix('v1')->middleware(['throttle:global'])->group(function () {
         Route::post('client/find', [ClientController::class, 'search']);
         Route::get('client/{id}/rides', [ClientController::class, 'ridesById']);
         Route::get('services/{id}', [ServiceController::class, 'show']);
+        Route::get('stripe/payment-dashboard-url', [StripeController::class, 'paymentDashboardUrl']);
     });
 
     // ADMIN Routes
