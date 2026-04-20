@@ -46,6 +46,15 @@ class AdminZohoController extends Controller
                     'Drivers_License'     => $z['Drivers_License'] ?? null,
                     'City_License_Permit' => $z['City_License_Permit'] ?? null,
                     'Car_Photo'           => $z['Car_Photo'] ?? null,
+                    
+                    //expiry
+                    'License_Exp'         => $z['License_Exp'] ?? null,
+                    'Insurance_Exp'       => $z['Insurance_Exp'] ?? null,
+                    'City_License_Exp'    => $z['City_License_Exp'] ?? null,
+                    'Registration_Exp'    => $z['Registration_Exp'] ?? null,
+                    'Criminal_Check_Exp'  => $z['Criminal_Check_Exp'] ?? null,
+                    'Abstract_Exp'        => $z['Abstract_Exp'] ?? null,
+                    'Safety_Exp'          => $z['Safety_Exp'] ?? null,
                 ]
             ]);
         } catch (\Exception $e) {

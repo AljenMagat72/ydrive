@@ -4,7 +4,9 @@ import {
   CheckSquare,
   Square,
   ChevronDown,
-  Loader2
+  Loader2,
+  FileText,
+  Clock
 } from "lucide-vue-next";
 
 const props = defineProps<{ drivers: Array<any> }>();
@@ -18,6 +20,17 @@ const fieldMapping = {
   "Criminal Record": "Criminal_Vulnerable",
   "Driver's Abstract": "Drivers_Abstract",
   "Safety Certificate": "Vehicle_Safety"
+} as const;
+
+const expiryMapping = {
+  "Driver's License": "License_Exp",
+  "Car Photo": "", 
+  "Insurance": "Insurance_Exp",
+  "City License": "City_License_Exp",
+  "Vehicle Registration": "Registration_Exp",
+  "Criminal Record": "Criminal_Check_Exp",
+  "Driver's Abstract": "Abstract_Exp",
+  "Safety Certificate": "Safety_Exp"
 } as const;
 
 type DocumentLabel = keyof typeof fieldMapping;
@@ -46,6 +59,7 @@ const { fetchZohoDetails, downloadAttachmentsZip, isLoading } = useZoho();
 const processedDrivers = computed(() => {
   const list = Array.isArray(props.drivers) ? props.drivers : [];
   return list.map((d) => ({
+      ...d,
       id: d.id ?? 0,
       name: `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || "Unknown",
       city: d.city ?? "",
@@ -55,10 +69,18 @@ const processedDrivers = computed(() => {
 
 const filteredDrivers = computed(() => {
   return processedDrivers.value.filter((d) => {
-    //const hasValidCity = d.city && d.city !== '';
+    if (!d.city || d.city.trim() === "") return false;
     const matchesCity = selectedCity.value ? d.city.toLowerCase() === selectedCity.value.toLowerCase() : true;
+    
     const matchesSearch = d.name.toLowerCase().includes(searchDriver.value.toLowerCase());
-    return matchesCity && matchesSearch;
+
+    let matchesStatus = true;
+    if (statusFilter.value !== "all") {
+      const status = checkStatus(d);
+      matchesStatus = status === statusFilter.value;
+    }
+
+    return matchesCity && matchesSearch && matchesStatus;
   });
 });
 
@@ -81,12 +103,81 @@ const isDocDisabled = (docLabel: string, driver: any): boolean => {
   return Array.isArray(val) ? val.length === 0 : !val;
 };
 
+const isExpired = (docLabel: string): boolean => {
+  const expiryField = expiryMapping[docLabel as DocumentLabel];
+  if (!expiryField || !driverDocsData.value) return false;
+
+  const rawDate = driverDocsData.value[expiryField];
+  if (!rawDate || rawDate === '---' || rawDate === '') return false;
+
+  const expiryDate = new Date(rawDate);
+  const today = new Date();
+
+  expiryDate.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
+  return expiryDate < today;
+};
+
+const isExpiringSoon = (docLabel: string): boolean => {
+  const expiryField = expiryMapping[docLabel as DocumentLabel];
+  if (!expiryField || !driverDocsData.value) return false;
+
+  const rawDate = driverDocsData.value[expiryField];
+  if (!rawDate || rawDate === '---' || rawDate === '') return false;
+
+  const expiryDate = new Date(rawDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const diffTime = expiryDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays <= 30 && diffDays >= 0;
+};
+
 const toggleDoc = (doc: DocumentLabel) => {
   if (selectedDocs.value.includes(doc)) {
     selectedDocs.value = selectedDocs.value.filter(d => d !== doc);
   } else {
     selectedDocs.value.push(doc);
   }
+};
+
+const checkStatus = (driver: any) => {
+  const source = (expandedDriverId.value === driver.id && driverDocsData.value) 
+                 ? driverDocsData.value 
+                 : driver;
+
+  let hasExpired = false;
+  let hasWarning = false;
+
+  for (const label in expiryMapping) {
+    const field = expiryMapping[label as DocumentLabel];
+    if (!field) continue;
+
+    const rawDate = source[field];
+    
+    if (!rawDate || rawDate === '---' || rawDate === '') continue;
+
+    const expiryDate = new Date(rawDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const diffTime = expiryDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      hasExpired = true;
+      break;
+    } else if (diffDays <= 30) {
+      hasWarning = true;
+    }
+  }
+
+  if (hasExpired) return 'expired';
+  if (hasWarning) return 'warning';
+  return 'normal';
 };
 
 const handleChecklistDownload = async (driver: any) => {
@@ -103,10 +194,8 @@ const handleChecklistDownload = async (driver: any) => {
 
   try {
       await downloadAttachmentsZip(driver.zohoId, fileIds, driver.name);
-      
       selectedDocs.value = [];
       expandedDriverId.value = null;
-      
     } catch (error) {
       console.error("Download failed", error);
     }
@@ -146,7 +235,7 @@ const visiblePages = computed(() => {
 
 const goToPage = (page: number) => { if (page >= 1 && page <= totalPages.value) currentPage.value = page; };
 
-watch([selectedCity, searchDriver], () => { currentPage.value = 1; });
+
 
 const perPageOptions = computed(() => [
   { label: "Show 10", value: 10 },
@@ -154,6 +243,16 @@ const perPageOptions = computed(() => [
   { label: "Show 100", value: 100 },
   { label: "Show All", value: filteredDrivers.value.length },
 ]);
+
+const statusFilter = ref("all");
+
+const statusOptions = [
+  { label: "Show All", value: "all" },
+  { label: "Expired", value: "expired" },
+  { label: "Expiring Soon", value: "warning" },
+];
+
+watch([selectedCity, searchDriver, statusFilter], () => { currentPage.value = 1; });
 </script>
 
 <template>
@@ -167,6 +266,15 @@ const perPageOptions = computed(() => [
         <ChevronDown class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
       </div>
 
+      <div class="relative w-full lg:w-1/4">
+        <select v-model="statusFilter" class="w-full capitalize appearance-none rounded-lg px-4 py-2 text-sm bg-white dark:bg-[#262728] border dark:text-white/50">
+          <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+        <ChevronDown class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+      </div>
+      
       <div class="relative w-full lg:w-1/4 dark:bg-[#262728]">
         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -192,8 +300,14 @@ const perPageOptions = computed(() => [
               <td class="text-xs text-left md:text-sm font-medium text-gray-400">
                 {{ ((currentPage - 1) * itemsPerPage) + index + 1 }}
               </td>
-              <td class="py-3 text-xs md:text-sm font-medium w-full max-w-[280px] px-2 truncate dark:text-white/70">
-               {{ driver.name }}
+              <td class="py-3 text-xs md:text-sm font-medium w-full max-w-[280px] px-2 truncate">
+                <span :class="[
+                  checkStatus(driver) === 'expired' ? 'text-red-600 font-bold border-lg' : 
+                  checkStatus(driver) === 'warning' ? 'text-amber-500 font-bold border-lg' : 
+                  'dark:text-white/70 text-gray-900'
+                ]">
+                  {{ driver.name }}
+                </span>
               </td>
               <td class="px-2 py-1 text-xs md:text-sm">
                 {{ driver.city }}
@@ -207,34 +321,52 @@ const perPageOptions = computed(() => [
             </tr>
 
             <tr v-if="expandedDriverId === driver.id">
-              <td colspan="3" class="px-6 py-6 bg-gray-50/50 dark:bg-black/20">
+              <td colspan="4" class="px-6 py-6 bg-gray-50/50 dark:bg-black/20">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-y-4 gap-x-8">
                   <div 
                     v-for="doc in documentList" 
                     :key="doc" 
-                    class="flex items-center gap-3 group transition-opacity"
+                    class="flex items-center gap-3 group transition-opacity p-2 rounded-md border"
                     :class="[
-                      isDocDisabled(doc, driver) ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer',
-                      !driverDocsData && driver.zohoId && isLoading ? 'opacity-50 cursor-wait' : ''
+                      isDocDisabled(doc, driver) ? 'opacity-30 cursor-not-allowed border-transparent' : 
+                      isExpired(doc) ? 'bg-red-500/10 border-red-500/50 cursor-pointer' : 
+                      isExpiringSoon(doc) ? 'bg-amber-500/10 border-amber-500/50 cursor-pointer' : 'cursor-pointer border-transparent',
                     ]"
                     @click="(!isDocDisabled(doc, driver)) ? toggleDoc(doc) : null"
                   >
-                    <div :class="isDocDisabled(doc, driver) ? 'text-gray-300' : 'text-blue-600'">
+                    <div :class="[
+                      isDocDisabled(doc, driver) ? 'text-gray-300' : 
+                      isExpired(doc) ? 'text-red-500' : 
+                      isExpiringSoon(doc) ? 'text-amber-500' : 'text-blue-600'
+                    ]">
                       <CheckSquare v-if="selectedDocs.includes(doc)" :size="20" />
                       <Square v-else :size="20" class="text-gray-400 group-hover:text-blue-400" />
                     </div>
 
                     <div class="flex flex-col">
-                      <span class="text-gray-700 dark:text-gray-300 font-medium text-xs md:text-sm">{{ doc }}</span>
+                      <span :class="[
+                        isExpired(doc) ? 'text-red-500 font-bold' : 
+                        isExpiringSoon(doc) ? 'text-amber-600 font-bold' : 'text-gray-700 dark:text-gray-300 font-medium',
+                        'text-xs md:text-sm'
+                      ]">
+                        {{ doc }}
+                      </span>
                       
-                      <span v-if="!driver.zohoId" class="text-[9px] text-orange-500 font-bold uppercase">
-                        No Zoho ID
+                      <span v-if="!driver.zohoId" class="text-[9px] text-orange-500 font-bold uppercase">No Zoho ID</span>
+                      <span v-else-if="isLoading && expandedDriverId === driver.id && !driverDocsData" class="text-[9px] text-blue-400 animate-pulse">Checking...</span>
+                      
+                      <span v-else-if="isExpired(doc)" class="text-[9px] text-red-600 font-black uppercase">
+                        Expired
                       </span>
-                      <span v-else-if="isLoading && expandedDriverId === driver.id && !driverDocsData" class="text-[9px] text-blue-400 animate-pulse">
-                        Checking...
+                      <span v-else-if="isExpiringSoon(doc)" class="text-[9px] text-amber-600 font-black uppercase">
+                        Expiring Soon
                       </span>
-                      <span v-else-if="isDocDisabled(doc, driver)" class="text-[9px] text-gray font-bold uppercase">
+                      <span v-else-if="isDocDisabled(doc, driver)" class="text-[9px] text-gray-400 font-bold uppercase">
                         N/A
+                      </span>
+                      
+                      <span v-if="driverDocsData?.[expiryMapping[doc]]" class="text-[8px] text-gray-400 italic">
+                        {{ driverDocsData[expiryMapping[doc]] }}
                       </span>
                     </div>
                   </div>

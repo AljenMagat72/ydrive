@@ -12,23 +12,25 @@ definePageMeta({
   middleware: ["auth"],
 });
 
-const drivers = ref<any[]>([]);
-const loading = ref(true);
+const drivers = useState<any[]>('drivers', () => []);
+const loading = ref(false);;
 
-const loadDrivers = async () => {
+const loadInitialDrivers = async () => {
+  if (drivers.value.length > 0) return;
+
   try {
     loading.value = true;
     const data = await fetchAllDrivers();
     drivers.value = data.drivers || [];
   } catch (err) {
-    console.error("Failed to fetch:", err);
+    console.error("Failed to load driver list:", err);
   } finally {
     loading.value = false;
   }
 };
 
 onMounted(() => {
-  loadDrivers();
+  loadInitialDrivers();
 });
 </script>
 

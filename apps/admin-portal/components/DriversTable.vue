@@ -92,7 +92,7 @@ watch(
 const filteredDrivers = computed(() => {
   let drivers = localDrivers.value.filter((d) => {
 
-    // const hasValidCity = d.city && d.city !== null && d.city !== '';
+    const hasValidCity = d.city && d.city !== null && d.city !== '';
     
     const matchesCity = selectedCity.value
       ? d.city.toLowerCase() === selectedCity.value.toLowerCase()
@@ -118,7 +118,7 @@ const filteredDrivers = computed(() => {
       d.acceptance >= acceptanceRange.value.min && 
       d.acceptance <= acceptanceRange.value.max;
     
-    return matchesCity && matchesSearch && matchesActive && matchesSchedule && matchesAcceptanceRange;
+    return hasValidCity && matchesCity && matchesSearch && matchesActive && matchesSchedule && matchesAcceptanceRange;
   });
   
    if (sortField.value) {

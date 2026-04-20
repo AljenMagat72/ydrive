@@ -25,6 +25,15 @@ class DriverResource extends JsonResource
       'acceptanceRate' => $this->acceptance_rate,
       'acceptanceRateNeeded' => $this->acceptance_rate_needed,
       'zoho_id' => $this->zoho_id,
+
+      //zoho expiry
+      'License_Exp'        => $this->license_expiry, 
+      'Insurance_Exp'      => $this->insurance_expiry,
+      'City_License_Exp'   => $this->city_license_expiry,
+      'Registration_Exp'   => $this->registration_expiry,
+      'Criminal_Check_Exp' => $this->criminal_expiry,
+      'Abstract_Exp'       => $this->abstract_expiry,
+      'Safety_Exp'         => $this->safety_expiry,
     ];
   }
 }

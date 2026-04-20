@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useZoho } from "#imports"
 import { fetchAllDrivers } from "~/lib/api/drivers";
 import DriversTable from "~/components/DriversTable.vue";
 import DriverSchedule from "~/components/DriverSchedule.vue";
@@ -34,7 +35,7 @@ const weeklySchedule = ref({});
 const error = ref(null);
 
 // Drivers list
-const drivers = ref<any[]>([]);
+const drivers = useState<any[]>("drivers", () => []);
 const showOnMobile = ref(false);
 
 // Load drivers
@@ -47,14 +48,6 @@ const loadDrivers = async () => {
     console.error("Failed to fetch drivers:", err);
   }
 };
-
-onMounted(async () => {
-  // Wait for auth before rendering Header
-  userReady.value = true;
-
-  // Load drivers after auth
-  loadDrivers();
-});
 
 // Driver select handler
 const handleDriverSelect = async (driver: any) => {
@@ -86,22 +79,6 @@ const deselectDriver = () => {
 // --------------------
 // Mount
 // --------------------
-onMounted(async () => {
-  console.log("true");
-  userReady.value = true;
-
-  await loadDrivers();
-
-  const savedDriverId = selectedDriverId.value;
-  if (savedDriverId) {
-    const driver = drivers.value.find((d) => d.id.toString() === savedDriverId);
-    if (driver) {
-      await handleDriverSelect(driver);
-      currentPage.value = "schedule";
-      currentSubPage.value = "admin-schedule";
-    }
-  }
-});
 
 const emit = defineEmits<{
   (e: "change-page", page: string): void;

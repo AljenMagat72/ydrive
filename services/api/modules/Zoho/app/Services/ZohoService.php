@@ -46,11 +46,16 @@ class ZohoService
         throw new Exception("Zoho Token Refresh Failed.");
     }
 
-    public function getContactById(string $zohoId): array
+    public function getContactById(string $zohoId): ?array
     {
-        return Http::withToken($this->refreshToken())
-            ->get("{$this->baseUrl}/Contacts/{$zohoId}")
-            ->json();
+        $response = Http::withToken($this->refreshToken())
+            ->get("{$this->baseUrl}/Contacts/{$zohoId}");
+
+        if ($response->failed()) {
+            return null;
+        }
+
+        return $response->json();
     }
 
     public function updateContact(string $zohoId, array $data): array
