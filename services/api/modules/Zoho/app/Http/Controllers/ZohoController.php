@@ -7,6 +7,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Zoho\Services\ZohoService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\BankingUpdateRequest;
+use App\Mail\HSTGSTUpdateRequest;
 
 class ZohoController extends Controller
 {
@@ -135,6 +138,7 @@ public function updateDocument(Request $request): JsonResponse
 
     public function updateProfile(Request $request)
     {
+        $user = $request->user();
         $zohoId = $this->getZohoId($request);
 
         $validated = $request->validate([
@@ -146,10 +150,10 @@ public function updateDocument(Request $request): JsonResponse
         ]);
 
         $mapping = [
-            'Bank_Name'    => 'TBU_Bank_Name',
-            'Bank_Account' => 'TBU_Bank_Account',
-            'Institution' => 'TBU_Institution',
-            'Transit' => 'TBU_Transit',
+            'Bank_Name'     => 'TBU_Bank_Name',
+            'Bank_Account'  => 'TBU_Bank_Account',
+            'Institution'   => 'TBU_Institution',
+            'Transit'       => 'TBU_Transit',
             'HST_GST'       => 'TBU_HST_GST',
         ];
 
@@ -162,10 +166,27 @@ public function updateDocument(Request $request): JsonResponse
         }
 
         if (empty($zohoData)) {
-            return response()->json(['success' => false, 'message' => 'No data to update'], 400);
+            return response()->json([
+            'success' => false, 
+            'message' => 'No data to update',
+            'received' => $request->all(),
+            'expected_one_of' => array_keys($mapping)
+        ], 400);
         }
 
         $result = $this->zoho->updateContact($zohoId, $zohoData);
+        try {
+            $adminEmails = config('zoho.zoho_admin_emails');
+            $name = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: $user->email;
+            
+            if ($request->has('HST_GST')) {
+                Mail::to($adminEmails)->send(new HSTGSTUpdateRequest($validated, $name));
+            } else {
+                Mail::to($adminEmails)->send(new BankingUpdateRequest($validated, $name));
+            }
+        } catch (\Exception $e) {
+            Log::error("Profile Update Email Failed: " . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,

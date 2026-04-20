@@ -74,11 +74,6 @@ const handleAction = async () => {
     </div>
 
     <div class="flex flex-col gap-6 mt-2 flex-grow">
-      <div class="mx-auto w-full sm:w-48 h-32 shrink-0 border-2 border-dashed border-gray-700 rounded-xl flex items-center justify-center bg-gray-900/50 overflow-hidden">
-        <div class="text-gray-600 text-[10px] text-center uppercase font-bold tracking-widest px-4">
-          {{ isEditing ? 'Update Details' : 'No Document on File' }}
-        </div>
-      </div>
 
       <div class="flex flex-col justify-top space-y-2 w-full">
         <div class="space-y-1">
