@@ -22,7 +22,6 @@ const rideDateTimeFormatOptions = {
   year: "numeric" as const,
   hour: "numeric" as const,
   minute: "2-digit" as const,
-  timeZone: "UTC",
 };
 
 export function formatDateTime(iso?: string | null) {
@@ -39,7 +38,6 @@ export function formatTimeOnly(iso?: string | null) {
   return new Intl.DateTimeFormat("en-CA", {
     hour: rideDateTimeFormatOptions.hour,
     minute: rideDateTimeFormatOptions.minute,
-    timeZone: rideDateTimeFormatOptions.timeZone,
   }).format(d);
 }
 
@@ -50,7 +48,6 @@ export function formatDateOnly(iso: string) {
     month: "short",
     day: "2-digit",
     year: "numeric",
-    timeZone: rideDateTimeFormatOptions.timeZone,
   }).format(d);
 }
 
@@ -58,15 +55,12 @@ export function formatRideCardDateParts(iso?: string | null): { monthDay: string
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  const tz = rideDateTimeFormatOptions.timeZone;
   const monthDay = new Intl.DateTimeFormat("en-CA", {
     month: "short",
     day: "numeric",
-    timeZone: tz,
   }).format(d);
   const year = new Intl.DateTimeFormat("en-CA", {
     year: "numeric",
-    timeZone: tz,
   }).format(d);
   return { monthDay, year };
 }
@@ -80,12 +74,12 @@ export function formatPickupPrebookWindow(afterTime?: string | null, beforeTime?
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
   if (end.getTime() <= start.getTime()) return null;
 
-  const sameUtcDay =
-    start.getUTCFullYear() === end.getUTCFullYear() &&
-    start.getUTCMonth() === end.getUTCMonth() &&
-    start.getUTCDate() === end.getUTCDate();
+  const sameLocalDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
 
-  if (sameUtcDay) {
+  if (sameLocalDay) {
     return `${formatDateOnly(a)}, ${formatTimeOnly(a)} – ${formatTimeOnly(b)}`;
   }
   return `${formatDateTime(a)} – ${formatDateTime(b)}`;
