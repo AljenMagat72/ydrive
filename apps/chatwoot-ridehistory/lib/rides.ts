@@ -1,6 +1,21 @@
 import * as React from "react";
-import type { Ride, StopPoint } from "@/lib/types";
+import type { ClientMatch, Ride, StopPoint } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
+
+function extractClientIdFromRidesPayload(data: unknown): string | null {
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    const id = (data as Record<string, unknown>).clientId;
+    return typeof id === "string" && id ? id : null;
+  }
+  return null;
+}
+
+function parseNeedsSelectionPayload(data: unknown): ClientMatch[] | null {
+  if (!data || typeof data !== "object") return null;
+  const o = data as Record<string, unknown>;
+  if (o.needsSelection !== true) return null;
+  return (o.matches as ClientMatch[]) ?? null;
+}
 
 export function byOrder(a: StopPoint, b: StopPoint) {
   return (a.orderInParent ?? 0) - (b.orderInParent ?? 0);
@@ -75,13 +90,27 @@ export function useClientRides(
   const [error, setError] = React.useState<string | null>(null);
   const [pageNumber, setPageNumber] = React.useState(0);
   const [hasMore, setHasMore] = React.useState(false);
+  const [pendingMatches, setPendingMatches] = React.useState<ClientMatch[] | null>(null);
+  const [selectionNonce, setSelectionNonce] = React.useState(0);
+  const clientIdRef = React.useRef<string | null>(null);
 
   const loadMore = React.useCallback(() => {
     setPageNumber((p) => p + 1);
   }, []);
 
+  const selectClient = React.useCallback((id: string) => {
+    const t = id.trim();
+    if (!t) return;
+    clientIdRef.current = t;
+    setPendingMatches(null);
+    setPageNumber(0);
+    setSelectionNonce((n) => n + 1);
+  }, []);
+
   React.useEffect(() => {
     setPageNumber(0);
+    clientIdRef.current = null;
+    setPendingMatches(null);
   }, [opts.embedded, opts.hasContext, opts.adminKey, derived?.displayName, derived?.email, derived?.phone]);
 
   React.useEffect(() => {
@@ -113,6 +142,10 @@ export function useClientRides(
       return;
     }
 
+    if (pendingMatches !== null) {
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -120,10 +153,14 @@ export function useClientRides(
     const ridesUrl = `/api/rides?${new URLSearchParams({ "admin-key": opts.adminKey })}`;
     const pageSize = 25;
 
+    const cid = clientIdRef.current;
+    const body: Record<string, unknown> = { phone, name, email, pageNumber };
+    if (cid) body.clientId = cid;
+
     fetch(ridesUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ phone, name, email, pageNumber }),
+      body: JSON.stringify(body),
     })
       .then(async (res) => {
         const data: unknown = await res.json().catch(() => ({}));
@@ -134,9 +171,24 @@ export function useClientRides(
               : `Request failed (${res.status})`;
           throw new Error(msg);
         }
+        const pick = parseNeedsSelectionPayload(data);
+        if (pick) {
+          clientIdRef.current = null;
+          if (!cancelled) {
+            setPendingMatches(pick);
+            setRides([]);
+            setHasMore(false);
+          }
+          return null;
+        }
+
+        const resolved = extractClientIdFromRidesPayload(data);
+        if (resolved) clientIdRef.current = resolved;
+
         return normalizeRidesPayload(data);
       })
       .then((list) => {
+        if (list === null) return;
         if (!cancelled) {
           setHasMore(list.length >= pageSize);
           setRides((prev) => mergeRidesPage(prev, list, pageNumber));
@@ -156,9 +208,19 @@ export function useClientRides(
     return () => {
       cancelled = true;
     };
-  }, [opts.embedded, opts.hasContext, opts.adminKey, derived?.displayName, derived?.email, derived?.phone, pageNumber]);
+  }, [
+    opts.embedded,
+    opts.hasContext,
+    opts.adminKey,
+    derived?.displayName,
+    derived?.email,
+    derived?.phone,
+    pageNumber,
+    pendingMatches,
+    selectionNonce,
+  ]);
 
-  return { rides, loading, error, hasMore, loadMore };
+  return { rides, loading, error, hasMore, loadMore, pendingMatches, selectClient };
 }
 
 export type ServiceNameById = Record<string, string>;

@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { ClientMatchPicker } from "@/components/ClientMatchPicker";
 import { CustomerHero } from "@/components/CustomerHero";
 import { RideRow } from "@/components/RideRow";
 import { deriveCustomer, useChatwootAppContext } from "@/lib/chatwoot";
@@ -19,7 +20,15 @@ function HomeContent() {
   const hasContext = Boolean(ctx?.data);
   const heroLoading = embedded && !hasContext;
 
-  const { rides, loading: ridesLoading, error: ridesError, hasMore, loadMore } = useClientRides(derived, {
+  const {
+    rides,
+    loading: ridesLoading,
+    error: ridesError,
+    hasMore,
+    loadMore,
+    pendingMatches,
+    selectClient,
+  } = useClientRides(derived, {
     embedded,
     hasContext,
     adminKey,
@@ -53,6 +62,10 @@ function HomeContent() {
 
         {ridesStatusNode}
 
+        {pendingMatches && pendingMatches.length > 0 ? (
+          <ClientMatchPicker matches={pendingMatches} onSelect={selectClient} disabled={ridesLoading} />
+        ) : null}
+
         <div className="mt-3 space-y-3 sm:mt-4">
           {rides.map((ride) => (
             <RideRow
@@ -69,7 +82,7 @@ function HomeContent() {
             type="button"
             variant="ghost"
             className="cursor-pointer h-10 px-4 text-base font-semibold text-white disabled:opacity-50"
-            disabled={ridesLoading || !!ridesError || !hasMore}
+            disabled={ridesLoading || !!ridesError || !hasMore || (pendingMatches?.length ?? 0) > 0}
             onClick={loadMore}
           >
             {ridesLoading ? (

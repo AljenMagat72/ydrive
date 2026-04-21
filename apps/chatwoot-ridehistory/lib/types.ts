@@ -75,6 +75,11 @@ export type AppContext = {
   };
 };
 
+export type ClientMatch = {
+  id: string;
+  row: Record<string, unknown>;
+};
+
 export type DerivedCustomer = {
   displayName: string;
   email: string | null;

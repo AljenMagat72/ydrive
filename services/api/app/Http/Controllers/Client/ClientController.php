@@ -104,32 +104,31 @@ class ClientController extends Controller
     return $matches;
   }
 
-  private function rowHasVerifiedEmail(array $row): bool
-  {
-    return array_key_exists('isEmailVerified', $row) && $row['isEmailVerified'] === true;
-  }
-
   /**
    * @param  array<int, array<string, mixed>>  $matches
    */
-  private function respondEmailLookup(array $matches): \Illuminate\Http\JsonResponse
+  private function respondMultipleEmailMatches(array $matches): \Illuminate\Http\JsonResponse
   {
-    if (count($matches) === 0) {
+    $out = [];
+    foreach ($matches as $row) {
+      if (!is_array($row)) {
+        continue;
+      }
+      $id = $row['id'] ?? null;
+      if ($id === null || $id === '') {
+        continue;
+      }
+      $out[] = [
+        'id' => (string) $id,
+        'row' => $row,
+      ];
+    }
+
+    if (count($out) === 0) {
       return $this->respondClientNotFound('Client not found for given email');
     }
-    if (count($matches) === 1) {
-      return $this->respondClientFound($matches[0]);
-    }
 
-    $verified = array_values(array_filter($matches, fn ($row) => is_array($row) && $this->rowHasVerifiedEmail($row)));
-    if (count($verified) === 1) {
-      return $this->respondClientFound($verified[0]);
-    }
-
-    return response()->json([
-      'message' => 'Multiple clients matched the given email',
-      'count' => count($matches),
-    ], 409);
+    return response()->json(['matches' => $out]);
   }
 
   private function searchByEmail(string $email)
@@ -143,7 +142,15 @@ class ClientController extends Controller
 
     $rows = is_array($clients['rows'] ?? null) ? $clients['rows'] : [];
 
-    return $this->respondEmailLookup($this->filterRowsByExactEmail($rows, $email));
+    $matches = $this->filterRowsByExactEmail($rows, $email);
+    if (count($matches) === 0) {
+      return $this->respondClientNotFound('Client not found for given email');
+    }
+    if (count($matches) === 1) {
+      return $this->respondClientFound($matches[0]);
+    }
+
+    return $this->respondMultipleEmailMatches($matches);
   }
 
   public function search(Request $request)
