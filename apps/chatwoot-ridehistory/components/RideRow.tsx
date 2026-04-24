@@ -152,7 +152,9 @@ export function RideRow({ ride, serviceName, adminKey }: { ride: Ride; serviceNa
   const bookedServiceLabel = serviceName || "—";
   const pickupShort = pickup?.description?.split(",")[0] ?? "Pickup";
   const dropoffShort = dropoff?.description?.split(",")[0] ?? "Dropoff";
-  const dateParts = formatRideCardDateParts(ride.createdAt);
+  const scheduledPickupIso = pickup?.afterTime ?? pickup?.beforeTime ?? null;
+  const cardTimeIso = scheduledPickupIso ?? ride.createdAt;
+  const dateParts = formatRideCardDateParts(cardTimeIso);
   const pickupPrebookWindow = pickup ? formatPickupPrebookWindow(pickup.afterTime ?? null, pickup.beforeTime ?? null) : null;
   const stateBadge = rideStateBadge(ride.state ?? "");
   const dropoffStatus = dropoffStatusRow(ride);
@@ -175,7 +177,7 @@ export function RideRow({ ride, serviceName, adminKey }: { ride: Ride; serviceNa
                 <div className="text-sm text-zinc-400">—</div>
               )}
               <div className="h-px w-11 max-w-full bg-white/20" />
-              <div className="text-widget-meta font-normal leading-tight text-zinc-400">{formatTimeOnly(ride.createdAt)}</div>
+              <div className="text-widget-meta font-normal leading-tight text-zinc-400">{formatTimeOnly(cardTimeIso)}</div>
               <div className="pt-1">
                 <Badge variant={stateBadge.variant} className={cn("h-6 px-2.5 text-xs font-semibold", stateBadge.className)}>
                   {stateBadge.label}
