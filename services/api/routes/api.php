@@ -53,7 +53,8 @@ Route::prefix('v1')->middleware(['throttle:global'])->group(function () {
         Route::post('client/find', [ClientController::class, 'search']);
         Route::get('client/{id}/rides', [ClientController::class, 'ridesById']);
         Route::get('services/{id}', [ServiceController::class, 'show']);
-        Route::get('stripe/payment-dashboard-url', [StripeController::class, 'paymentDashboardUrl']);
+        Route::get('stripe/payment-intent/{paymentId}', [StripeController::class, 'paymentIntent']);
+        Route::get('stripe/charge/{chargeId}', [StripeController::class, 'charge']);
     });
 
     // ADMIN Routes

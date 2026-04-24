@@ -75,39 +75,78 @@ export function RideRow({ ride, serviceName, adminKey }: { ride: Ride; serviceNa
   const paymentId = ride.payment?.id ?? "";
   const [stripeUrl, setStripeUrl] = React.useState<string | null>(null);
   const [stripeLoading, setStripeLoading] = React.useState(false);
+  const [stripeBreakdown, setStripeBreakdown] = React.useState<Ride["paymentBreakdown"] | null>(null);
 
   React.useEffect(() => {
     setStripeUrl(null);
+    setStripeBreakdown(null);
   }, [paymentId]);
 
-  const resolveStripeUrl = React.useCallback(async () => {
+  function moneyFromStripeAmount(raw: unknown): number {
+    const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+    if (!Number.isFinite(n)) return 0;
+    return n / 100;
+  }
+
+  const resolveStripeData = React.useCallback(async () => {
     if (!paymentId || stripeLoading) return null;
+    if (stripeUrl && stripeBreakdown) return { url: stripeUrl, breakdown: stripeBreakdown };
     if (!adminKey) return null;
 
     setStripeLoading(true);
     try {
-      const qs = new URLSearchParams({ "admin-key": adminKey, paymentId });
-      const res = await fetch(`/api/stripe/payment-dashboard-url?${qs.toString()}`, {
+      const piQs = new URLSearchParams({ "admin-key": adminKey });
+      const piRes = await fetch(`/api/stripe/payment-intent/${encodeURIComponent(paymentId)}?${piQs.toString()}`, {
         method: "GET",
         headers: { Accept: "application/json" },
       });
-      const data = (await res.json().catch(() => ({}))) as { url?: string };
-      const url = res.ok && typeof data.url === "string" ? data.url : null;
+      const piData = (await piRes.json().catch(() => ({}))) as { paymentIntent?: { id?: string; latestChargeId?: string | null } };
+      const pi = piRes.ok ? piData.paymentIntent ?? null : null;
+      const piId = pi?.id ?? "";
+      const latestChargeId = pi?.latestChargeId ?? "";
+
+      const url = piId ? `https://dashboard.stripe.com/payments/${piId}` : null;
       if (url) setStripeUrl(url);
-      return url;
+
+      // Fetch the charge, then compute amounts client-side.
+      if (latestChargeId) {
+        const chQs = new URLSearchParams({ "admin-key": adminKey });
+        const chRes = await fetch(`/api/stripe/charge/${encodeURIComponent(latestChargeId)}?${chQs.toString()}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const chData = (await chRes.json().catch(() => ({}))) as { charge?: { amount?: unknown; amountCaptured?: unknown; amountRefunded?: unknown } };
+        const charge = chRes.ok ? chData.charge ?? null : null;
+        if (charge) {
+          const next = {
+            preAuth: moneyFromStripeAmount(charge.amount),
+            captured: moneyFromStripeAmount(charge.amountCaptured),
+            refunded: moneyFromStripeAmount(charge.amountRefunded),
+          };
+          setStripeBreakdown(next);
+          return { url, breakdown: next };
+        }
+      }
+
+      return { url, breakdown: null };
     } finally {
       setStripeLoading(false);
     }
-  }, [adminKey, paymentId, stripeLoading]);
+  }, [adminKey, paymentId, stripeLoading, stripeBreakdown, stripeUrl]);
 
   const onOpenPaymentClick = React.useCallback(async () => {
     if (stripeUrl) {
       window.open(stripeUrl, "_blank", "noreferrer");
       return;
     }
-    const url = await resolveStripeUrl();
-    if (url) window.open(url, "_blank", "noreferrer");
-  }, [resolveStripeUrl, stripeUrl]);
+    const r = await resolveStripeData();
+    if (r?.url) window.open(r.url, "_blank", "noreferrer");
+  }, [resolveStripeData, stripeUrl]);
+
+  const onPriceInfoClick = React.useCallback(async () => {
+    if (!stripeBreakdown) await resolveStripeData();
+    setPriceOpen(true);
+  }, [resolveStripeData, stripeBreakdown]);
 
   const bookingUrl = buildAutofleetBookingUrl(ride);
   const bookedServiceLabel = serviceName || "—";
@@ -282,34 +321,22 @@ export function RideRow({ ride, serviceName, adminKey }: { ride: Ride; serviceNa
             <div className="flex w-full items-start justify-between gap-3">
               <div className="ml-auto flex items-center gap-1.5">
                 <div className="text-right text-2xl font-bold tabular-nums tracking-tight text-white sm:text-3xl">{formatMoney(ride.priceAmount, ride.priceCurrency)}</div>
-                <button type="button" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-widget-surface-25" onClick={() => setPriceOpen((o) => !o)} aria-label="Price details">
+                <button type="button" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-widget-surface-25" onClick={onPriceInfoClick} aria-label="Price details">
                   <Info className="h-4 w-4" strokeWidth={2} />
                 </button>
               </div>
             </div>
 
             <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:justify-end sm:gap-3">
-              {stripeUrl ? (
-                <a
-                  href={stripeUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-auto min-h-12 w-full min-w-0 shrink items-center justify-center gap-2 whitespace-normal rounded-sm border border-white/15 bg-widget-action-muted px-4 py-3 text-center text-base font-medium leading-tight text-zinc-300 shadow-none hover:bg-widget-surface-6 hover:text-zinc-100 sm:min-h-10 sm:w-auto sm:min-w-40 sm:px-4 sm:py-2 sm:text-sm sm:leading-none sm:whitespace-nowrap"
-                >
-                  <Wallet className="h-5 w-5 shrink-0 opacity-90 sm:h-4 sm:w-4" aria-hidden />
-                  <span>Open Payment</span>
-                </a>
-              ) : (
-                <button
-                  type="button"
-                  onClick={onOpenPaymentClick}
-                  disabled={!adminKey || stripeLoading}
-                  className="inline-flex h-auto min-h-12 w-full min-w-0 shrink items-center justify-center gap-2 whitespace-normal rounded-sm border border-white/15 bg-widget-action-muted px-4 py-3 text-center text-base font-medium leading-tight text-zinc-300 shadow-none hover:bg-widget-surface-6 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-45 sm:min-h-10 sm:w-auto sm:min-w-40 sm:px-4 sm:py-2 sm:text-sm sm:leading-none sm:whitespace-nowrap"
-                >
-                  <Wallet className="h-5 w-5 shrink-0 opacity-90 sm:h-4 sm:w-4" aria-hidden />
-                  <span>{stripeLoading ? "Loading…" : "Open Payment"}</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={onOpenPaymentClick}
+                disabled={!adminKey || stripeLoading}
+                className="cursor-pointer inline-flex h-auto min-h-12 w-full min-w-0 shrink items-center justify-center gap-2 whitespace-normal rounded-sm border border-white/15 bg-widget-action-muted px-4 py-3 text-center text-base font-medium leading-tight text-zinc-300 shadow-none hover:bg-widget-surface-6 hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-45 sm:min-h-10 sm:w-auto sm:min-w-40 sm:px-4 sm:py-2 sm:text-sm sm:leading-none sm:whitespace-nowrap"
+              >
+                <Wallet className="h-5 w-5 shrink-0 opacity-90 sm:h-4 sm:w-4" aria-hidden />
+                <span>{stripeLoading ? "Loading…" : "Open Payment"}</span>
+              </button>
 
               <a
                 href={bookingUrl}
@@ -330,17 +357,20 @@ export function RideRow({ ride, serviceName, adminKey }: { ride: Ride; serviceNa
         <DialogContent>
           <DialogTitle className="text-xl font-bold tracking-tight text-white">Payment details</DialogTitle>
           <div className="mt-4 space-y-3 text-base">
+            {stripeLoading ? (
+              <div className="text-sm font-medium text-zinc-400">Loading payment details…</div>
+            ) : null}
             <div className="flex items-center justify-between gap-4">
               <div className="font-semibold text-white/80">Pre auth</div>
-              <div className="font-extrabold text-white">{formatMoney(ride.paymentBreakdown?.preAuth ?? 0, ride.priceCurrency)}</div>
+              <div className="font-extrabold text-white">{formatMoney(stripeBreakdown?.preAuth ?? ride.paymentBreakdown?.preAuth ?? 0, ride.priceCurrency)}</div>
             </div>
             <div className="flex items-center justify-between gap-4">
               <div className="font-semibold text-white/80">Captured</div>
-              <div className="font-extrabold text-white">{formatMoney(ride.paymentBreakdown?.captured ?? 0, ride.priceCurrency)}</div>
+              <div className="font-extrabold text-white">{formatMoney(stripeBreakdown?.captured ?? ride.paymentBreakdown?.captured ?? 0, ride.priceCurrency)}</div>
             </div>
             <div className="flex items-center justify-between gap-4">
               <div className="font-semibold text-white/80">Refunded</div>
-              <div className="font-extrabold text-white">{formatMoney(ride.paymentBreakdown?.refunded ?? 0, ride.priceCurrency)}</div>
+              <div className="font-extrabold text-white">{formatMoney(stripeBreakdown?.refunded ?? ride.paymentBreakdown?.refunded ?? 0, ride.priceCurrency)}</div>
             </div>
           </div>
         </DialogContent>

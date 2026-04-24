@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Stripe\StripeChargeResource;
+use App\Http\Resources\Stripe\StripePaymentIntentResource;
 use App\Services\StripeService;
 use Illuminate\Http\Request;
 use Throwable;
@@ -13,12 +15,12 @@ class StripeController extends Controller
     {
     }
 
-    public function paymentDashboardUrl(Request $request)
+    public function paymentIntent(string $paymentId)
     {
-        $validated = $request->validate([
-            'paymentId' => ['required', 'string'],
-        ]);
-        $paymentId = trim((string) ($validated['paymentId'] ?? ''));
+        $paymentId = trim($paymentId);
+        if ($paymentId === '') {
+            return response()->json(['message' => 'Missing paymentId'], 400);
+        }
 
         try {
             $pi = $this->stripeService->findPaymentIntentByAutofleetPaymentId($paymentId);
@@ -33,15 +35,29 @@ class StripeController extends Controller
             return response()->json(['message' => 'Stripe payment intent not found for paymentId'], 404);
         }
 
-        $piId = (string) ($pi['id'] ?? '');
+        return response()->json([
+            'paymentIntent' => StripePaymentIntentResource::make($pi),
+        ]);
+    }
 
-        if ($piId === '') {
-            return response()->json(['message' => 'Stripe response missing payment intent id'], 502);
+    public function charge(string $chargeId)
+    {
+        $chargeId = trim($chargeId);
+        if ($chargeId === '') {
+            return response()->json(['message' => 'Missing chargeId'], 400);
+        }
+
+        try {
+            $charge = $this->stripeService->retrieveCharge($chargeId);
+        } catch (Throwable $e) {
+            return response()->json([
+                'message' => 'Stripe request failed',
+                'details' => $e->getMessage(),
+            ], 502);
         }
 
         return response()->json([
-            'url' => $this->stripeService->dashboardUrlForPaymentIntent($piId),
-            'paymentIntentId' => $piId,
+            'charge' => StripeChargeResource::make($charge),
         ]);
     }
 }

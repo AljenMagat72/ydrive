@@ -6,15 +6,12 @@ use Illuminate\Support\Facades\Http;
 
 class StripeService
 {
-    public function findPaymentIntentByAutofleetPaymentId(string $paymentId): ?array
+    private function http()
     {
         $secretKey = trim((string) env('STRIPE_SECRET_KEY'));
         if ($secretKey === '') {
             throw new \RuntimeException('Missing STRIPE_SECRET_KEY');
         }
-
-        $query = "metadata['paymentId']:'" . str_replace("'", "\\'", $paymentId) . "'";
-        $url = 'https://api.stripe.com/v1/payment_intents/search';
 
         $req = Http::withToken($secretKey)->acceptJson();
 
@@ -23,7 +20,14 @@ class StripeService
             $req = $req->withHeaders(['Stripe-Account' => $accountId]);
         }
 
-        $res = $req->get($url, ['query' => $query]);
+        return $req;
+    }
+
+    public function findPaymentIntentByAutofleetPaymentId(string $paymentId): ?array
+    {
+        $query = "metadata['paymentId']:'" . str_replace("'", "\\'", $paymentId) . "'";
+        $url = 'https://api.stripe.com/v1/payment_intents/search';
+        $res = $this->http()->get($url, ['query' => $query]);
         if (!$res->ok()) {
             throw new \RuntimeException('Stripe request failed: ' . $res->body(), $res->status());
         }
@@ -42,6 +46,27 @@ class StripeService
         }
 
         return null;
+    }
+
+    public function retrieveCharge(string $chargeId): array
+    {
+        $chargeId = trim($chargeId);
+        if ($chargeId === '') {
+            throw new \RuntimeException('Missing Stripe charge id');
+        }
+
+        $url = 'https://api.stripe.com/v1/charges/' . rawurlencode($chargeId);
+        $res = $this->http()->get($url);
+        if (!$res->ok()) {
+            throw new \RuntimeException('Stripe request failed: ' . $res->body(), $res->status());
+        }
+
+        $data = $res->json();
+        if (!is_array($data)) {
+            throw new \RuntimeException('Stripe response invalid');
+        }
+
+        return $data;
     }
 
     public function dashboardUrlForPaymentIntent(string $paymentIntentId): string
