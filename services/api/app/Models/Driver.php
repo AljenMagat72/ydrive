@@ -109,7 +109,6 @@ class Driver extends BaseUser
     'city_id',
     'phone_number',
     'is_delinquent',
-    'prevent_delinquency',
     'is_active',
     'acceptance_rate',
     'minimum_scheduled_hours',
