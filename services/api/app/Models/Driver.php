@@ -157,6 +157,12 @@ class Driver extends BaseUser
     return $query->whereRaw('COALESCE(minimum_acceptance_rate, ?) > COALESCE(weekly_acceptance_rate, 0)', [$minAcceptanceRate]);
   }
 
+  public function routeNotificationForTwilio()
+  {
+    //Autofleet stores the number without a +
+    return "+$this->phone_number";
+  }
+
   public function schedules()
   {
     return $this->hasMany(DriverSchedule::class);
