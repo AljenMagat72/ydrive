@@ -59,7 +59,6 @@ class AutoFleetWebHookController extends Controller
             'address'            => $afDriver['address'] ?? null,
             'is_active'          => true,
             'is_delinquent'           => false,
-            'prevent_delinquency'     => false,
             'acceptance_rate'         => 0,
             'acceptance_rate_needed'  => 70,
             'minimum_scheduled_hours' => 15,
