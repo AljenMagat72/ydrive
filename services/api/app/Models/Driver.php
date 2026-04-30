@@ -111,7 +111,6 @@ class Driver extends BaseUser
     'is_delinquent',
     'prevent_delinquency',
     'is_active',
-    'original_vendor_id',
     'acceptance_rate',
     'minimum_scheduled_hours',
     'acceptance_rate_needed',

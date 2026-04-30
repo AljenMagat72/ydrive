@@ -49,7 +49,7 @@ class AutoFleetWebHookController extends Controller
     $cityLabel = $afDriver['labels'][0]['value'] ?? 'Unknown';
 
     Driver::updateOrCreate(
-        ['autofleet_driver_id' => $afDriver['id']], 
+        ['autofleet_driver_id' => $afDriver['id']],
         [
             'first_name'         => $afDriver['firstName'],
             'last_name'          => $afDriver['lastName'],
@@ -57,7 +57,6 @@ class AutoFleetWebHookController extends Controller
             'city_id'            => $cityLabel,
             'avatar'             => $afDriver['avatar'] ?? null,
             'address'            => $afDriver['address'] ?? null,
-            'original_vendor_id' => null,
             'is_active'          => true,
             'is_delinquent'           => false,
             'prevent_delinquency'     => false,
