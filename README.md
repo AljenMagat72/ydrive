@@ -1,4 +1,4 @@
-# Y Drive App Mono repo
+# Y Drive App Monorepo
 
 ## What's inside?
 
