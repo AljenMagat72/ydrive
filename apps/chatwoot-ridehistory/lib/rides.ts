@@ -150,7 +150,7 @@ export function useClientRides(
     setLoading(true);
     setError(null);
 
-    const ridesUrl = `/api/rides?${new URLSearchParams({ "admin-key": opts.adminKey })}`;
+    const ridesUrl = "/api/rides";
     const pageSize = 25;
 
     const cid = clientIdRef.current;
@@ -159,7 +159,7 @@ export function useClientRides(
 
     fetch(ridesUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: { "Content-Type": "application/json", Accept: "application/json", "X-Admin-Key": opts.adminKey },
       body: JSON.stringify(body),
     })
       .then(async (res) => {
@@ -221,6 +221,100 @@ export function useClientRides(
   ]);
 
   return { rides, loading, error, hasMore, loadMore, pendingMatches, selectClient };
+}
+
+// ClientId-only rides loader (no Chatwoot → client lookup).
+// Used when we already know the AutoFleet client id (e.g. from a Zoho record's AutoFleet_ID).
+export function useClientRidesById(
+  clientId: string | null | undefined,
+  opts: { adminKey: string; enabled: boolean },
+) {
+  const [rides, setRides] = React.useState<Ride[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [pageNumber, setPageNumber] = React.useState(0);
+  const [hasMore, setHasMore] = React.useState(false);
+
+  const loadMore = React.useCallback(() => {
+    setPageNumber((p) => p + 1);
+  }, []);
+
+  React.useEffect(() => {
+    setPageNumber(0);
+  }, [clientId, opts.adminKey, opts.enabled]);
+
+  React.useEffect(() => {
+    if (!opts.enabled) {
+      setRides([]);
+      setError(null);
+      setLoading(false);
+      setHasMore(false);
+      return;
+    }
+
+    const cid = (clientId ?? "").trim();
+    if (!cid) {
+      setRides([]);
+      setError(null);
+      setLoading(false);
+      setHasMore(false);
+      return;
+    }
+
+    if (!opts.adminKey) {
+      setRides([]);
+      setError("Missing admin key: add ?admin-key=… to the dashboard app URL (same origin as this widget).");
+      setLoading(false);
+      setHasMore(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    const ridesUrl = "/api/rides";
+    const pageSize = 25;
+
+    fetch(ridesUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json", "X-Admin-Key": opts.adminKey },
+      body: JSON.stringify({ clientId: cid, pageNumber }),
+    })
+      .then(async (res) => {
+        const data: unknown = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg =
+            data && typeof data === "object" && "message" in data && typeof (data as { message?: unknown }).message === "string"
+              ? (data as { message: string }).message
+              : `Request failed (${res.status})`;
+          throw new Error(msg);
+        }
+        return normalizeRidesPayload(data);
+      })
+      .then((list) => {
+        if (!cancelled) {
+          setHasMore(list.length >= pageSize);
+          setRides((prev) => mergeRidesPage(prev, list, pageNumber));
+        }
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Failed to load rides");
+          setRides([]);
+          setHasMore(false);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId, opts.adminKey, opts.enabled, pageNumber]);
+
+  return { rides, loading, error, hasMore, loadMore };
 }
 
 export type ServiceNameById = Record<string, string>;

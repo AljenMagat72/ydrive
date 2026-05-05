@@ -36,6 +36,13 @@ export type ChatwootSocialProfiles = {
   linkedin?: string;
 };
 
+export type Customer = {
+  name: string;
+  email: string;
+  phone: string;
+  identifier: string;
+}
+
 export type ChatwootPerson = {
   id?: number;
   name?: string;

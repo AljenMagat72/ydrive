@@ -7,8 +7,14 @@ export function baseUrlFromEnv(): string | null {
 }
 
 export function adminKeyFromRequest(req: NextRequest): string | null {
-  const k = req.nextUrl.searchParams.get("admin-key")?.trim() ?? "";
-  return k || null;
+  const fromQuery = req.nextUrl.searchParams.get("admin-key")?.trim() ?? "";
+  if (fromQuery) return fromQuery;
+
+  const fromHeader = req.headers.get("x-admin-key")?.trim() ?? "";
+  if (fromHeader) return fromHeader;
+
+  const fromEnv = process.env.ADMIN_KEY?.trim() ?? "";
+  return fromEnv || null;
 }
 
 async function safeJsonFromText(text: string): Promise<unknown> {
