@@ -13,8 +13,7 @@ export function adminKeyFromRequest(req: NextRequest): string | null {
   const fromHeader = req.headers.get("x-admin-key")?.trim() ?? "";
   if (fromHeader) return fromHeader;
 
-  const fromEnv = process.env.ADMIN_KEY?.trim() ?? "";
-  return fromEnv || null;
+  return null;
 }
 
 async function safeJsonFromText(text: string): Promise<unknown> {

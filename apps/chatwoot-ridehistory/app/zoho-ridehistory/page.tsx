@@ -1,7 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RideHistoryShell } from "@/components/RideHistoryShell";
 import { useClientRidesById, useRideServices } from "@/lib/rides";
@@ -52,7 +52,7 @@ function derivedFromZohoCustomer(customer: Customer | null): DerivedCustomer | n
   };
 }
 
-export default function ZohoRideHistory() {
+function ZohoRideHistoryInner() {
   const searchParams = useSearchParams();
   const adminKey = searchParams.get("admin-key")?.trim() ?? "";
   const overrideClientId = searchParams.get("clientId")?.trim() ?? "";
@@ -146,5 +146,13 @@ export default function ZohoRideHistory() {
         hasMore={hasMore}
       />
     </>
+  );
+}
+
+export default function ZohoRideHistory() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-zinc-400">Loading…</div>}>
+      <ZohoRideHistoryInner />
+    </Suspense>
   );
 }
