@@ -32,7 +32,7 @@ class RegistrationRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email'),
+                Rule::unique('admins', 'email'),
             ],
 
             'form.password' => [
