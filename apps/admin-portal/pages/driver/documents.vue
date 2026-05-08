@@ -30,7 +30,7 @@ const loadInitialDrivers = async () => {
 };
 
 onMounted(() => {
-  loadInitialDrivers();
+  //loadInitialDrivers();
 });
 </script>
 
