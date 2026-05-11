@@ -9,6 +9,7 @@ use Modules\Zoho\Services\ZohoService;
 use ZipArchive;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class AdminZohoController extends Controller
@@ -26,16 +27,15 @@ class AdminZohoController extends Controller
     public function show(string $zohoId): JsonResponse
     {
         try {
-            $result = $this->zoho->getContactById($zohoId);
-            $z = (isset($result['data']) && count($result['data']) > 0) ? $result['data'][0] : null;
+            $cachedData = Cache::remember("admin_zoho_driver_{$zohoId}", now()->addHours(24), function () use ($zohoId) {
+                $result = $this->zoho->getContactById($zohoId);
+                $z = (isset($result['data']) && count($result['data']) > 0) ? $result['data'][0] : null;
 
-            if (!$z) {
-                return response()->json(['success' => false, 'message' => 'Driver not found in Zoho'], 404);
-            }
+                if (!$z) {
+                    return null;
+                }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
+                return [
                     'id'                  => $zohoId,
                     'Full_Name'           => $z['Full_Name'] ?? null,
                     'Criminal_Vulnerable' => $z['Criminal_Vulnerable'] ?? null,
@@ -55,8 +55,18 @@ class AdminZohoController extends Controller
                     'Criminal_Check_Exp'  => $z['Criminal_Check_Exp'] ?? null,
                     'Abstract_Exp'        => $z['Abstract_Exp'] ?? null,
                     'Safety_Exp'          => $z['Safety_Exp'] ?? null,
-                ]
+                ];
+            });
+
+            if (!$cachedData) {
+                return response()->json(['success' => false, 'message' => 'Driver not found in Zoho'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $cachedData
             ]);
+
         } catch (\Exception $e) {
             Log::error("Zoho Show Error: " . $e->getMessage());
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
