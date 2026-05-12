@@ -172,7 +172,7 @@ const setTheme = (theme: 'light' | 'dark') => {
                 </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
-            <SidebarMenuItem v-if="showPersonal">
+            <SidebarMenuItem v-if="user?.cityId === 'Medicine Hat'">
               <SidebarMenuButton as-child>
                 <NuxtLink to="/personal" @click="closeSideBar" class="flex items-center justify-between w-full">
                   <div class="flex items-center gap-2">
