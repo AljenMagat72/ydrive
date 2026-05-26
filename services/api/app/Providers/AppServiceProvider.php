@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Clients\Client;
 use App\Models\Driver;
+use App\Observers\Chatwoot\ChatwootClientObserver;
+use App\Observers\Zoho\ZohoClientObserver;
 use App\Policies\DriverPolicy;
 use App\Services\AutoFleetService;
 use App\Services\DriverService;
@@ -15,31 +18,41 @@ use Illuminate\Http\Request;
 
 class AppServiceProvider extends ServiceProvider
 {
-  /**
-   * Register any application services.
-   */
-  public function register(): void
-  {
-    $this->app->singleton(AutoFleetService::class);
-    $this->app->singleton(DriverService::class);
-  }
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        $this->app->singleton(AutoFleetService::class);
+        $this->app->singleton(DriverService::class);
+    }
 
-  /**
-   * Bootstrap any application services.
-   */
-  public function boot(): void
-  {
-    Gate::policy(Driver::class, DriverPolicy::class);
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        Gate::policy(Driver::class, DriverPolicy::class);
 
-    RateLimiter::for(
-      'global', 
-      fn(Request $request) => 
-      Limit::perMinute(10000)->by($request->ip()));
+        // Only attach the observer if the feature is explicitly enabled
+        if (config('features.zoho_rider_sync')) {
+            Client::observe(ZohoClientObserver::class);
+        }
 
-    RateLimiter::for(
-      'sms',
-      fn(Request $request) =>
-      Limit::perMinute(10)->by($request->ip())
-    );
-  }
+        if (config('features.chatwoot_client_sync')) {
+            Client::observe(ChatwootClientObserver::class);
+        }
+
+        RateLimiter::for(
+            'global',
+            fn(Request $request) =>
+            Limit::perMinute(10000)->by($request->ip())
+        );
+
+        RateLimiter::for(
+            'sms',
+            fn(Request $request) =>
+            Limit::perMinute(10)->by($request->ip())
+        );
+    }
 }

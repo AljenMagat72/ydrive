@@ -18,21 +18,22 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
 
-    'ses' => [
-        'key' => env('AWS_ACCESS_KEY_ID'),
-        'secret' => env('AWS_SECRET_ACCESS_KEY'),
-        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    'chatwoot' => [
+        'api_key' => env('CHATWOOT_API_KEY'),
+        'base_url' => env('CHATWOOT_BASE_URL', 'https://coms.ydriveapp.com'),
+
+        'clients' => [
+            'account_id' => env('CHATWOOT_CLIENT_ACCOUNT_ID', ''),
+        ]
     ],
 
-    'resend' => [
-        'key' => env('RESEND_KEY'),
-    ],
+    'zoho' => [
+        'refresh_token' => env('ZOHO_REFRESH_TOKEN'),
+        'client_id' => env('ZOHO_CLIENT_ID'),
+        'client_secret' => env('ZOHO_CLIENT_SECRET'),
+        'crm' => [
+            'base_url' => env('ZOHO_BASE_URL', 'https://www.zohoapis.com/crm/v8'),
+        ]
 
-    'slack' => [
-        'notifications' => [
-            'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
-            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
-        ],
-    ],
-
+    ]
 ];

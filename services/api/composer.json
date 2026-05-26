@@ -23,6 +23,7 @@
     "nwidart/laravel-modules": "^13.0",
     "opcodesio/log-viewer": "^3.20",
     "propaganistas/laravel-phone": "^6.0",
+    "saloonphp/laravel-plugin": "^4.3",
     "tightenco/ziggy": "^2.4",
     "twilio/sdk": "^8.6"
   },

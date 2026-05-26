@@ -2,7 +2,7 @@
 
 return [
   'refresh_token' => env('AUTOFLEET_REFRESH_TOKEN'),
-  'end_point' => env('AUTOFLEET_END_POINT'),
+  'end_point' => env('AUTOFLEET_END_POINT', 'https://api.autofleet.io/api'),
   'demand_source_id' => env('AUTOFLEET_DEMAND_SOURCE_ID'),
   'scrapper_url' => env('AUTOFLEET_SCRAPPER_URL'),
   'fleet_id' => env('AUTOFLEET_ENTITY_ID'),

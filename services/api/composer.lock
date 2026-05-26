@@ -4,7 +4,7 @@
     "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
     "This file is @generated automatically"
   ],
-  "content-hash": "2ed8ec7b461d0436e85cbe1707b1925c",
+  "content-hash": "5713504e577df56f3d0be736dd4bb930",
   "packages": [
     {
       "name": "brick/math",
@@ -1084,16 +1084,16 @@
     },
     {
       "name": "guzzlehttp/psr7",
-      "version": "2.9.0",
+      "version": "2.9.1",
       "source": {
         "type": "git",
         "url": "https://github.com/guzzle/psr7.git",
-        "reference": "7d0ed42f28e42d61352a7a79de682e5e67fec884"
+        "reference": "3780f78d6f2854cb327944a22c7b0617852ab7e9"
       },
       "dist": {
         "type": "zip",
-        "url": "https://api.github.com/repos/guzzle/psr7/zipball/7d0ed42f28e42d61352a7a79de682e5e67fec884",
-        "reference": "7d0ed42f28e42d61352a7a79de682e5e67fec884",
+        "url": "https://api.github.com/repos/guzzle/psr7/zipball/3780f78d6f2854cb327944a22c7b0617852ab7e9",
+        "reference": "3780f78d6f2854cb327944a22c7b0617852ab7e9",
         "shasum": ""
       },
       "require": {
@@ -1108,9 +1108,9 @@
       },
       "require-dev": {
         "bamarni/composer-bin-plugin": "^1.8.2",
-        "http-interop/http-factory-tests": "0.9.0",
+        "http-interop/http-factory-tests": "1.1.0",
         "jshttp/mime-db": "1.54.0.1",
-        "phpunit/phpunit": "^8.5.44 || ^9.6.25"
+        "phpunit/phpunit": "^8.5.52 || ^9.6.34"
       },
       "suggest": {
         "laminas/laminas-httphandlerrunner": "Emit PSR-7 responses"
@@ -1181,7 +1181,7 @@
       ],
       "support": {
         "issues": "https://github.com/guzzle/psr7/issues",
-        "source": "https://github.com/guzzle/psr7/tree/2.9.0"
+        "source": "https://github.com/guzzle/psr7/tree/2.9.1"
       },
       "funding": [
         {
@@ -1197,7 +1197,7 @@
           "type": "tidelift"
         }
       ],
-      "time": "2026-03-10T16:41:02+00:00"
+      "time": "2026-05-19T15:17:22+00:00"
     },
     {
       "name": "guzzlehttp/uri-template",
@@ -1787,16 +1787,16 @@
     },
     {
       "name": "laravel/prompts",
-      "version": "v0.3.17",
+      "version": "v0.3.18",
       "source": {
         "type": "git",
         "url": "https://github.com/laravel/prompts.git",
-        "reference": "6a82ac19a28b916ae0885828795dbd4c59d9a818"
+        "reference": "a19af51bb144bf87f08397921fa619f85c7d4e72"
       },
       "dist": {
         "type": "zip",
-        "url": "https://api.github.com/repos/laravel/prompts/zipball/6a82ac19a28b916ae0885828795dbd4c59d9a818",
-        "reference": "6a82ac19a28b916ae0885828795dbd4c59d9a818",
+        "url": "https://api.github.com/repos/laravel/prompts/zipball/a19af51bb144bf87f08397921fa619f85c7d4e72",
+        "reference": "a19af51bb144bf87f08397921fa619f85c7d4e72",
         "shasum": ""
       },
       "require": {
@@ -1840,9 +1840,9 @@
       "description": "Add beautiful and user-friendly forms to your command-line applications.",
       "support": {
         "issues": "https://github.com/laravel/prompts/issues",
-        "source": "https://github.com/laravel/prompts/tree/v0.3.17"
+        "source": "https://github.com/laravel/prompts/tree/v0.3.18"
       },
-      "time": "2026-04-20T16:07:33+00:00"
+      "time": "2026-05-19T00:47:18+00:00"
     },
     {
       "name": "laravel/sanctum",
@@ -4381,6 +4381,157 @@
         "source": "https://github.com/ramsey/uuid/tree/4.9.2"
       },
       "time": "2025-12-14T04:43:48+00:00"
+    },
+    {
+      "name": "saloonphp/laravel-plugin",
+      "version": "v4.3.0",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/saloonphp/laravel-plugin.git",
+        "reference": "c9754084dabe1002000d01cc2192fd08cfa6079d"
+      },
+      "dist": {
+        "type": "zip",
+        "url": "https://api.github.com/repos/saloonphp/laravel-plugin/zipball/c9754084dabe1002000d01cc2192fd08cfa6079d",
+        "reference": "c9754084dabe1002000d01cc2192fd08cfa6079d",
+        "shasum": ""
+      },
+      "require": {
+        "illuminate/console": "^11.0 || ^12.39.0 || ^13.0",
+        "illuminate/support": "^11.0 || ^12.39.0 || ^13.0",
+        "php": "^8.2",
+        "saloonphp/saloon": "^4.0",
+        "symfony/finder": "^6.4 || ^7.0 || ^8.0"
+      },
+      "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.48",
+        "laravel/pulse": "^1.4",
+        "laravel/telescope": "^5.16",
+        "orchestra/testbench": "^9.15 || ^10.7 || ^11.0",
+        "pestphp/pest": "^3.0|^4.0",
+        "phpstan/phpstan": "^1.10.57|^2.0.2"
+      },
+      "type": "library",
+      "extra": {
+        "laravel": {
+          "aliases": {
+            "Saloon": "Saloon\\Laravel\\Facades\\Saloon"
+          },
+          "providers": [
+            "Saloon\\Laravel\\SaloonServiceProvider"
+          ]
+        }
+      },
+      "autoload": {
+        "psr-4": {
+          "Saloon\\Laravel\\": "src/"
+        }
+      },
+      "notification-url": "https://packagist.org/downloads/",
+      "license": [
+        "MIT"
+      ],
+      "authors": [
+        {
+          "name": "Sam Carré",
+          "email": "29132017+Sammyjo20@users.noreply.github.com",
+          "role": "Developer"
+        }
+      ],
+      "description": "The official Laravel plugin for Saloon",
+      "homepage": "https://github.com/saloonphp/laravel-plugin",
+      "keywords": [
+        "api",
+        "api-integrations",
+        "saloon",
+        "saloonphp",
+        "sdk"
+      ],
+      "support": {
+        "source": "https://github.com/saloonphp/laravel-plugin/tree/v4.3.0"
+      },
+      "time": "2026-04-23T23:22:12+00:00"
+    },
+    {
+      "name": "saloonphp/saloon",
+      "version": "v4.0.0",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/saloonphp/saloon.git",
+        "reference": "1307b1d72cacdd2c9c20978cdf7a0b720b4bf3bb"
+      },
+      "dist": {
+        "type": "zip",
+        "url": "https://api.github.com/repos/saloonphp/saloon/zipball/1307b1d72cacdd2c9c20978cdf7a0b720b4bf3bb",
+        "reference": "1307b1d72cacdd2c9c20978cdf7a0b720b4bf3bb",
+        "shasum": ""
+      },
+      "require": {
+        "guzzlehttp/guzzle": "^7.6",
+        "guzzlehttp/promises": "^1.5 || ^2.0",
+        "guzzlehttp/psr7": "^2.0",
+        "php": "^8.2",
+        "psr/http-factory": "^1.0",
+        "psr/http-message": "^1.1 || ^2.0"
+      },
+      "conflict": {
+        "sammyjo20/saloon": "*"
+      },
+      "require-dev": {
+        "ext-simplexml": "*",
+        "friendsofphp/php-cs-fixer": "^3.5",
+        "illuminate/collections": "^10.0 || ^11.0 || ^12.0",
+        "league/flysystem": "^3.0",
+        "pestphp/pest": "^2.36.0 || ^3.8.2 || ^4.1.4",
+        "phpstan/phpstan": "^2.1.13",
+        "saloonphp/xml-wrangler": "^1.1",
+        "spatie/invade": "^2.1",
+        "symfony/dom-crawler": "^6.0 || ^7.0",
+        "symfony/var-dumper": "^6.3 || ^7.0"
+      },
+      "suggest": {
+        "illuminate/collections": "Required for the response collect() method.",
+        "saloonphp/xml-wrangler": "Required for the response xmlReader() method.",
+        "symfony/dom-crawler": "Required for the response dom() method.",
+        "symfony/var-dumper": "Required for default debugging drivers."
+      },
+      "type": "library",
+      "autoload": {
+        "psr-4": {
+          "Saloon\\": "src/"
+        }
+      },
+      "notification-url": "https://packagist.org/downloads/",
+      "license": [
+        "MIT"
+      ],
+      "authors": [
+        {
+          "name": "Sam Carré",
+          "email": "29132017+Sammyjo20@users.noreply.github.com",
+          "role": "Developer"
+        }
+      ],
+      "description": "Build beautiful API integrations and SDKs with Saloon",
+      "homepage": "https://github.com/saloonphp/saloon",
+      "keywords": [
+        "api",
+        "api-integrations",
+        "saloon",
+        "sammyjo20",
+        "sdk"
+      ],
+      "support": {
+        "issues": "https://github.com/saloonphp/saloon/issues",
+        "source": "https://github.com/saloonphp/saloon/tree/v4.0.0"
+      },
+      "funding": [
+        {
+          "url": "https://github.com/sammyjo20",
+          "type": "github"
+        }
+      ],
+      "time": "2026-03-17T22:58:33+00:00"
     },
     {
       "name": "symfony/clock",
@@ -7997,16 +8148,16 @@
     },
     {
       "name": "laravel/boost",
-      "version": "v2.4.6",
+      "version": "v2.4.7",
       "source": {
         "type": "git",
         "url": "https://github.com/laravel/boost.git",
-        "reference": "c9ea6368c66f7c0e6a9b26706b401de900cdb9ac"
+        "reference": "cebd69eb8ebcefd27653ba95407ef8be965ec239"
       },
       "dist": {
         "type": "zip",
-        "url": "https://api.github.com/repos/laravel/boost/zipball/c9ea6368c66f7c0e6a9b26706b401de900cdb9ac",
-        "reference": "c9ea6368c66f7c0e6a9b26706b401de900cdb9ac",
+        "url": "https://api.github.com/repos/laravel/boost/zipball/cebd69eb8ebcefd27653ba95407ef8be965ec239",
+        "reference": "cebd69eb8ebcefd27653ba95407ef8be965ec239",
         "shasum": ""
       },
       "require": {
@@ -8059,7 +8210,7 @@
         "issues": "https://github.com/laravel/boost/issues",
         "source": "https://github.com/laravel/boost"
       },
-      "time": "2026-04-28T11:52:01+00:00"
+      "time": "2026-05-18T12:23:29+00:00"
     },
     {
       "name": "laravel/mcp",
@@ -9841,23 +9992,23 @@
     },
     {
       "name": "sebastian/cli-parser",
-      "version": "4.2.0",
+      "version": "4.2.1",
       "source": {
         "type": "git",
         "url": "https://github.com/sebastianbergmann/cli-parser.git",
-        "reference": "90f41072d220e5c40df6e8635f5dafba2d9d4d04"
+        "reference": "7d05781b13f7dec9043a629a21d086ed74582a15"
       },
       "dist": {
         "type": "zip",
-        "url": "https://api.github.com/repos/sebastianbergmann/cli-parser/zipball/90f41072d220e5c40df6e8635f5dafba2d9d4d04",
-        "reference": "90f41072d220e5c40df6e8635f5dafba2d9d4d04",
+        "url": "https://api.github.com/repos/sebastianbergmann/cli-parser/zipball/7d05781b13f7dec9043a629a21d086ed74582a15",
+        "reference": "7d05781b13f7dec9043a629a21d086ed74582a15",
         "shasum": ""
       },
       "require": {
         "php": ">=8.3"
       },
       "require-dev": {
-        "phpunit/phpunit": "^12.0"
+        "phpunit/phpunit": "^12.5.25"
       },
       "type": "library",
       "extra": {
@@ -9886,7 +10037,7 @@
       "support": {
         "issues": "https://github.com/sebastianbergmann/cli-parser/issues",
         "security": "https://github.com/sebastianbergmann/cli-parser/security/policy",
-        "source": "https://github.com/sebastianbergmann/cli-parser/tree/4.2.0"
+        "source": "https://github.com/sebastianbergmann/cli-parser/tree/4.2.1"
       },
       "funding": [
         {
@@ -9906,7 +10057,7 @@
           "type": "tidelift"
         }
       ],
-      "time": "2025-09-14T09:36:45+00:00"
+      "time": "2026-05-17T05:29:34+00:00"
     },
     {
       "name": "sebastian/comparator",
@@ -11041,9 +11192,9 @@
   "prefer-stable": true,
   "prefer-lowest": false,
   "platform": {
-    "php": "^8.3",
+    "php": "^8.4",
     "ext-zip": "*"
   },
   "platform-dev": {},
-  "plugin-api-version": "2.9.0"
+  "plugin-api-version": "2.6.0"
 }

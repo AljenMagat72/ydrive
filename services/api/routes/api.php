@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\StripeController;
+use App\Http\Controllers\AutoFleet\AutofleetClientWebHookController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\AutoFleet\AutoFleetWebHookController;
 use App\Http\Controllers\AdminScheduleController;
@@ -105,6 +106,10 @@ Route::prefix('enchant')->group(function () {
 Route::prefix('webhook')->group(function () {
     Route::post('/ride-updated', [AutoFleetWebHookController::class, 'rideUpdated']);
     Route::post('/driver-created', [AutoFleetWebHookController::class, 'driverCreation']);
+
+    Route::post('/clients/onboarded', [AutofleetClientWebHookController::class, 'onboarded']);
+    Route::post('/clients/updated', [AutofleetClientWebHookController::class, 'updated']);
+    Route::post('/clients/deleted', [AutofleetClientWebHookController::class, 'deleted']);
 });
 
 
