@@ -76,10 +76,19 @@ class AutoFleetWebHookController extends Controller
     return response()->json(['status' => 'ok']);
 }
 
-  public function priceUpdated(Request $request)
+  public function priceChange(Request $request)
   {
     $fullPayload = $request->all();
     Log::info('AF price update: received', $fullPayload);
+
+    return response()->json(['status' => 'ok']);
+  }
+
+
+  public function additionalChargeAdded(Request $request)
+  {
+    $fullPayload = $request->all();
+    Log::info('AF additional charge added: received', $fullPayload);
 
     return response()->json(['status' => 'ok']);
   }

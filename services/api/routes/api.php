@@ -107,7 +107,8 @@ Route::prefix('webhook')->group(function () {
     Route::post('/ride-updated', [AutoFleetWebHookController::class, 'rideUpdated']);
     Route::post('/driver-created', [AutoFleetWebHookController::class, 'driverCreation']);
 
-    Route::post('/price-updated', [AutoFleetWebHookController::class, 'priceUpdated']);
+    Route::post('/price-change', [AutoFleetWebHookController::class, 'priceChange']);
+    Route::Post('/additional-charge-added', [AutoFleetWebHookController::class, 'additionalChargeAdded']);
     
     Route::post('/clients/onboarded', [AutofleetClientWebHookController::class, 'onboarded']);
     Route::post('/clients/updated', [AutofleetClientWebHookController::class, 'updated']);
