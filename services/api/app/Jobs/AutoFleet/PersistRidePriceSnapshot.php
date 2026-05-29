@@ -12,22 +12,22 @@ use Illuminate\Support\Str;
 /**
  * Persists Autofleet `ride-price-change` webhooks into {@see RidePriceSnapshot}.
  *
- * Webhook shape (camelCase) → DB columns (snake_case):
+ * Webhook shape (camelCase) - DB columns (snake_case):
  *
- * data.priceCalculation.id                 → price_calculation_id
- * data.priceCalculation.rideId           → ride_id
- * data.priceCalculation.driverId         → driver_id (optional; also data.driverId)
- * data.priceCalculation.pricingPolicyId  → pricing_policy_id
+ * data.priceCalculation.id                 - price_calculation_id
+ * data.priceCalculation.rideId           - ride_id
+ * data.priceCalculation.driverId         - driver_id (optional; also data.driverId)
+ * data.priceCalculation.pricingPolicyId  - pricing_policy_id
  * data.priceCalculation.businessModelId
- *   or data.businessModelId                → business_model_id
- * data.priceCalculation.demandSourceId   → demand_source_id
- * data.priceCalculation.currency         → currency
- * data.priceCalculation.calculationReason → calculation_reason
- * data.priceCalculation.basePrice        → base_price (null → 0)
- * data.priceCalculation.surgePrice       → surge_price (null → 0)
- * data.priceCalculation.totalPrice       → total_price (null → 0)
+ *   or data.businessModelId                - business_model_id
+ * data.priceCalculation.demandSourceId   - demand_source_id
+ * data.priceCalculation.currency         - currency
+ * data.priceCalculation.calculationReason - calculation_reason
+ * data.priceCalculation.basePrice        - base_price (null - 0)
+ * data.priceCalculation.surgePrice       - surge_price (null - 0)
+ * data.priceCalculation.totalPrice       - total_price (null - 0)
  * data.priceCalculation.totalDriverEarnings (ride-level; preferred when set)
- *   else data.priceCalculation.driverEarnings → total_driver_earnings
+ *   else data.priceCalculation.driverEarnings - total_driver_earnings
  */
 class PersistRidePriceSnapshot implements ShouldQueue
 {
