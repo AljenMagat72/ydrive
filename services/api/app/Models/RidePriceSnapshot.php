@@ -52,10 +52,10 @@ class RidePriceSnapshot extends Model
   protected function casts(): array
   {
     return [
-      'base_price' => 'decimal:2',
-      'surge_price' => 'decimal:2',
-      'total_price' => 'decimal:2',
-      'total_driver_earnings' => 'decimal:2',
+      'base_price' => 'decimal:4',
+      'surge_price' => 'decimal:4',
+      'total_price' => 'decimal:4',
+      'total_driver_earnings' => 'decimal:4',
     ];
   }
 }

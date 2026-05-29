@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\AutoFleet\PersistRidePriceSnapshot;
 use App\Services\AutoFleetService;
 use App\Models\ClientNotification;
 use App\Models\Driver;
@@ -80,6 +81,8 @@ class AutoFleetWebHookController extends Controller
   {
     $fullPayload = $request->all();
     Log::info('AF price update: received', $fullPayload);
+
+    PersistRidePriceSnapshot::dispatch($fullPayload);
 
     return response()->json(['status' => 'ok']);
   }
