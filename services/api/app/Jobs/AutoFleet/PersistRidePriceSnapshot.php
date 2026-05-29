@@ -2,6 +2,7 @@
 
 namespace App\Jobs\AutoFleet;
 
+use App\Http\Integrations\Autofleet\AutofleetApi;
 use App\Models\RidePriceSnapshot;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -16,7 +17,8 @@ use Illuminate\Support\Str;
  *
  * data.priceCalculation.id                 - price_calculation_id
  * data.priceCalculation.rideId           - ride_id
- * data.priceCalculation.driverId         - driver_id (optional; also data.driverId)
+ * GET /v1/rides/{rideId}                 - client_id, driver_id (preferred when returned)
+ * data.priceCalculation.driverId         - driver_id fallback when ride API omits driverId
  * data.priceCalculation.pricingPolicyId  - pricing_policy_id
  * data.priceCalculation.businessModelId
  *   or data.businessModelId                - business_model_id
@@ -38,7 +40,7 @@ class PersistRidePriceSnapshot implements ShouldQueue
   ) {
   }
 
-  public function handle(): void
+  public function handle(AutofleetApi $autofleetApi): void
   {
     $data = Arr::get($this->payload, 'data');
     $pc = is_array($data) ? Arr::get($data, 'priceCalculation') : null;
@@ -52,9 +54,13 @@ class PersistRidePriceSnapshot implements ShouldQueue
     }
 
     $rideId = (string) $pc['rideId'];
-    $driverId = $this->nullableUuid(
+    $driverIdFromWebhook = $this->nullableUuid(
       Arr::get($pc, 'driverId') ?? (is_array($data) ? Arr::get($data, 'driverId') : null)
     );
+
+    [$clientIdFromRide, $driverIdFromRide] = $this->fetchRideClientAndDriverIds($autofleetApi, $rideId);
+
+    $driverId = $driverIdFromRide ?? $driverIdFromWebhook;
 
     $snapshot = RidePriceSnapshot::firstOrNew(['ride_id' => $rideId]);
 
@@ -72,6 +78,10 @@ class PersistRidePriceSnapshot implements ShouldQueue
     $snapshot->total_price = $this->decimalOrZero(Arr::get($pc, 'totalPrice'));
     $snapshot->total_driver_earnings = $this->resolveTotalDriverEarnings($pc);
 
+    if ($clientIdFromRide !== null) {
+      $snapshot->client_id = $clientIdFromRide;
+    }
+
     if ($driverId !== null) {
       $snapshot->driver_id = $driverId;
     }
@@ -81,6 +91,41 @@ class PersistRidePriceSnapshot implements ShouldQueue
     }
 
     $snapshot->save();
+  }
+
+  /**
+   * @return array{0: ?string, 1: ?string} [clientId, driverId] from Autofleet ride JSON
+   */
+  private function fetchRideClientAndDriverIds(AutofleetApi $autofleetApi, string $rideId): array
+  {
+    try {
+      $response = $autofleetApi->rides()->get($rideId);
+      if (! $response->successful()) {
+        Log::warning('AF price snapshot: ride GET not successful', [
+          'ride_id' => $rideId,
+          'status' => $response->status(),
+        ]);
+
+        return [null, null];
+      }
+
+      $body = $response->json();
+      if (! is_array($body)) {
+        return [null, null];
+      }
+
+      return [
+        $this->nullableUuid(Arr::get($body, 'clientId')),
+        $this->nullableUuid(Arr::get($body, 'driverId')),
+      ];
+    } catch (\Throwable $e) {
+      Log::warning('AF price snapshot: ride fetch failed', [
+        'ride_id' => $rideId,
+        'message' => $e->getMessage(),
+      ]);
+
+      return [null, null];
+    }
   }
 
   /**

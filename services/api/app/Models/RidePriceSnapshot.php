@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @property int $id
  * @property string $ride_id
+ * @property string|null $client_id
  * @property string|null $driver_id
  * @property string $price_calculation_id
  * @property string|null $business_model_id
@@ -35,6 +36,7 @@ class RidePriceSnapshot extends Model
 
   protected $fillable = [
     'ride_id',
+    'client_id',
     'driver_id',
     'price_calculation_id',
     'business_model_id',

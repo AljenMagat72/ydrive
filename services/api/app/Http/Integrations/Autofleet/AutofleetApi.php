@@ -4,6 +4,7 @@ namespace App\Http\Integrations\Autofleet;
 
 use App\Http\Integrations\Autofleet\Requests\Login\RefreshTokenRequest;
 use App\Http\Integrations\Autofleet\Resources\ClientsResource;
+use App\Http\Integrations\Autofleet\Resources\RidesResource;
 
 use App\Services\Autofleet\AutofleetAuthenticationService;
 use Saloon\Exceptions\Request\RequestException;
@@ -48,5 +49,10 @@ class AutofleetApi extends Connector
     public function clients()
     {
         return new ClientsResource($this);
+    }
+
+    public function rides()
+    {
+        return new RidesResource($this);
     }
 }
