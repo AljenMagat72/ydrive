@@ -85,13 +85,13 @@ class AutoFleetWebHookController extends Controller
   }
 
 
-  public function additionalChargeAdded(Request $request)
-  {
-    $fullPayload = $request->all();
-    Log::info('AF additional charge added: received', $fullPayload);
+  // public function additionalChargeAdded(Request $request)
+  // {
+  //   $fullPayload = $request->all();
+  //   Log::info('AF additional charge added: received', $fullPayload);
 
-    return response()->json(['status' => 'ok']);
-  }
+  //   return response()->json(['status' => 'ok']);
+  // }
 
   public function rideUpdated(Request $request)
   {
