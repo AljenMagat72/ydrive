@@ -82,6 +82,20 @@ class AutoFleetWebHookController extends Controller
     $fullPayload = $request->all();
     Log::info('AF price update: received', $fullPayload);
 
+    $validator = Validator::make($fullPayload, [
+      'data.priceCalculation.id' => ['required', 'uuid'],
+      'data.priceCalculation.rideId' => ['required', 'uuid'],
+    ]);
+
+    if ($validator->fails()) {
+      Log::error('AF price update: invalid payload', [
+        'errors' => $validator->errors()->toArray(),
+        'payload' => $fullPayload,
+      ]);
+
+      return response()->json(['status' => 'error', 'message' => 'Invalid payload'], 422);
+    }
+
     PersistRidePriceSnapshot::dispatchSync($fullPayload);
 
     return response()->json(['status' => 'ok']);

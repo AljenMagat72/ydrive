@@ -62,8 +62,8 @@ class PersistRidePriceSnapshot implements ShouldQueue
 
     $driverId = $driverIdFromRide ?? $driverIdFromWebhook;
 
-    // Unique on ride_id: same ride always updates this row (never a second snapshot per ride).
     $snapshot = RidePriceSnapshot::firstOrNew(['ride_id' => $rideId]);
+    $isNew = ! $snapshot->exists;
 
     $snapshot->ride_id = $rideId;
     $snapshot->price_calculation_id = (string) $pc['id'];
@@ -87,11 +87,17 @@ class PersistRidePriceSnapshot implements ShouldQueue
       $snapshot->driver_id = $driverId;
     }
 
-    if (! $snapshot->exists) {
+    if ($isNew) {
       $snapshot->payout_status = RidePriceSnapshot::PAYOUT_STATUS_TO_BE_SETTLED;
     }
 
     $snapshot->save();
+
+    Log::info('AF price snapshot: persisted', [
+      'ride_id' => $rideId,
+      'price_calculation_id' => $snapshot->price_calculation_id,
+      'action' => $isNew ? 'created' : 'updated',
+    ]);
   }
 
   /**
