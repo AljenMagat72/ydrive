@@ -29,7 +29,7 @@ class AutoFleetWebHookController extends Controller
   public function driverCreation(Request $request)
 {
     $fullPayload = $request->all();
-    Log::info('AF Webhook Received:', $fullPayload);
+   // Log::info('AF Webhook Received:', ['payload' => $fullPayload]);
 
     $validator = Validator::make($fullPayload, [
         'driver.id'          => ['required', 'string'],
@@ -80,7 +80,7 @@ class AutoFleetWebHookController extends Controller
   public function priceChange(Request $request)
   {
     $fullPayload = $request->all();
-    Log::info('AF price update: received', $fullPayload);
+    Log::info('AF price update: received', ['payload' => $fullPayload]);
 
     $validator = Validator::make($fullPayload, [
       'data.priceCalculation.id' => ['required', 'uuid'],

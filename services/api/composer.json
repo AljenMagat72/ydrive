@@ -24,6 +24,7 @@
     "opcodesio/log-viewer": "^3.20",
     "propaganistas/laravel-phone": "^6.0",
     "saloonphp/laravel-plugin": "^4.3",
+    "saloonphp/saloon": "^4.0",
     "tightenco/ziggy": "^2.4",
     "twilio/sdk": "^8.6"
   },

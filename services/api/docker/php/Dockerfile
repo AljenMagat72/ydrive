@@ -22,4 +22,10 @@ RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd zip
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www
+# COPY entrypoint.sh /usr/local/bin/laravel-entrypoint.sh
+# RUN chmod +x /usr/local/bin/laravel-entrypoint.sh
+
+# WORKDIR /var/www
+
+# ENTRYPOINT ["/usr/local/bin/laravel-entrypoint.sh"]
+# CMD ["php-fpm", "-O"]
