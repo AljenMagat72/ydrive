@@ -82,7 +82,7 @@ class AutoFleetWebHookController extends Controller
     $fullPayload = $request->all();
     Log::info('AF price update: received', $fullPayload);
 
-    PersistRidePriceSnapshot::dispatch($fullPayload);
+    PersistRidePriceSnapshot::dispatchSync($fullPayload);
 
     return response()->json(['status' => 'ok']);
   }

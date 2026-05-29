@@ -62,6 +62,7 @@ class PersistRidePriceSnapshot implements ShouldQueue
 
     $driverId = $driverIdFromRide ?? $driverIdFromWebhook;
 
+    // Unique on ride_id: same ride always updates this row (never a second snapshot per ride).
     $snapshot = RidePriceSnapshot::firstOrNew(['ride_id' => $rideId]);
 
     $snapshot->ride_id = $rideId;
