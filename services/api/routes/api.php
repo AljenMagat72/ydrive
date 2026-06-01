@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Admin\RidePriceSnapshotController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\StripeController;
 use App\Http\Controllers\AutoFleet\AutofleetClientWebHookController;
@@ -56,6 +57,7 @@ Route::prefix('v1')->middleware(['throttle:global'])->group(function () {
         Route::get('services/{id}', [ServiceController::class, 'show']);
         Route::get('stripe/payment-intent/{paymentId}', [StripeController::class, 'paymentIntent']);
         Route::get('stripe/charge/{chargeId}', [StripeController::class, 'charge']);
+        Route::get('ride-price-snapshots', [RidePriceSnapshotController::class, 'index']);
     });
 
     // ADMIN Routes

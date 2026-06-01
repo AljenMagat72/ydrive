@@ -121,10 +121,7 @@ class PersistRidePriceSnapshot implements ShouldQueue
         return [null, null];
       }
 
-      return [
-        $this->nullableUuid(Arr::get($body, 'clientId')),
-        $this->nullableUuid(Arr::get($body, 'driverId')),
-      ];
+      return $this->rideClientAndDriverFromRideJson($body);
     } catch (\Throwable $e) {
       Log::warning('AF price snapshot: ride fetch failed', [
         'ride_id' => $rideId,
@@ -133,6 +130,27 @@ class PersistRidePriceSnapshot implements ShouldQueue
 
       return [null, null];
     }
+  }
+
+  /**
+   * @return array{0: ?string, 1: ?string} [clientId, driverId]
+   */
+  private function rideClientAndDriverFromRideJson(array $body): array
+  {
+    $ride = is_array(Arr::get($body, 'data')) ? Arr::get($body, 'data') : $body;
+
+    if (! is_array($ride)) {
+      return [null, null];
+    }
+
+    $clientId = $this->nullableUuid(
+      Arr::get($ride, 'clientId') ?? Arr::get($ride, 'client_id')
+    );
+    $driverId = $this->nullableUuid(
+      Arr::get($ride, 'driverId') ?? Arr::get($ride, 'driver_id')
+    );
+
+    return [$clientId, $driverId];
   }
 
   /**

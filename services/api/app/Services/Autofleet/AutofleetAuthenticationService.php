@@ -27,13 +27,13 @@ class AutofleetAuthenticationService
                 return Cache::get($this->accessTokenKey);
             }
 
-            $refreshToken = Cache::get($this->refreshTokenKey);
+            $refreshToken = $this->resolveRefreshToken();
 
-            if (!$refreshToken) {
+            if (! $refreshToken) {
                 throw new \Exception('No Refresh token found');
             }
 
-            $request = new RefreshTokenRequest(Cache::get($this->refreshTokenKey));
+            $request = new RefreshTokenRequest($refreshToken);
             $response = $request->send();
 
             if ($response->failed()) {
@@ -59,5 +59,14 @@ class AutofleetAuthenticationService
     {
         Cache::set($this->refreshTokenKey, $refreshToken);
         $this->refreshToken();
+    }
+
+    /**
+     * Prefer refresh token stored by {@see authenticate}; fall back to env/config
+     * so Saloon ({@see \App\Http\Integrations\Autofleet\AutofleetApi}) matches {@see \App\Services\AutoFleetService}.
+     */
+    private function resolveRefreshToken(): ?string
+    {
+        return Cache::get($this->refreshTokenKey) ?: config('autofleet.refresh_token');
     }
 }
