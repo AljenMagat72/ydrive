@@ -80,7 +80,7 @@ class AutoFleetWebHookController extends Controller
   public function priceChange(Request $request)
   {
     $fullPayload = $request->all();
-    Log::info('AF price update: received', ['payload' => $fullPayload]);
+   // Log::info('AF price update: received', ['payload' => $fullPayload]);
 
     $validator = Validator::make($fullPayload, [
       'data.priceCalculation.id' => ['required', 'uuid'],
