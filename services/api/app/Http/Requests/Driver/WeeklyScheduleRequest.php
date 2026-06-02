@@ -14,7 +14,7 @@ class WeeklyScheduleRequest extends FormRequest
   public function rules(): array
   {
     return [
-      'start_date' => ['required', 'date']
+      'date' => ['required', 'date']
     ];
   }
 }

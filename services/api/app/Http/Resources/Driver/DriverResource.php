@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Driver;
 
+use App\Settings\DriverSettings;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,25 +16,12 @@ class DriverResource extends JsonResource
   public function toArray(Request $request): array
   {
     return [
-      'id' => $this->id,
+      'id' => $this->uuid,
       'firstName' => $this->first_name,
       'lastName' => $this->last_name,
       'avatar' => $this->avatar,
-      'phoneNumber' => $this->phone_number,
-      'cityId' => $this->city_id,
-      'minimumScheduledHours' => $this->minimum_scheduled_hours,
-      'acceptanceRate' => $this->acceptance_rate,
-      'acceptanceRateNeeded' => $this->acceptance_rate_needed,
-      'zoho_id' => $this->zoho_id,
-
-      //zoho expiry
-      'License_Exp'        => $this->license_expiry, 
-      'Insurance_Exp'      => $this->insurance_expiry,
-      'City_License_Exp'   => $this->city_license_expiry,
-      'Registration_Exp'   => $this->registration_expiry,
-      'Criminal_Check_Exp' => $this->criminal_expiry,
-      'Abstract_Exp'       => $this->abstract_expiry,
-      'Safety_Exp'         => $this->safety_expiry,
+      'minimumScheduledHours' => $this->minimum_scheduled_hours ?? app(DriverSettings::class)->minimum_scheduled_hours,
+      'minimumAcceptanceRate' => $this->minimum_acceptance_rate ?? app(DriverSettings::class)->minimum_acceptance_rate
     ];
   }
 }

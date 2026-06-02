@@ -2,44 +2,64 @@
 
 return [
 
-  'defaults' => [
-    'guard' => env('AUTH_GUARD', 'sanctum'),
-    'passwords' => env('AUTH_PASSWORD_BROKER', 'admins'),
-  ],
-
-  'guards' => [
-    'web' => [
-      'driver' => 'session',
-      'provider' => 'admins',
+    'defaults' => [
+        'guard' => 'admin',
+        'passwords' => 'admins',
     ],
 
-    'sanctum' => [
-      'driver' => 'sanctum',
-      'provider' => null,
+    /*
+    |--------------------------------------------------------------------------
+    | Guards
+    |--------------------------------------------------------------------------
+    */
+
+    'guards' => [
+        'driver' => [
+            'driver' => 'session',
+            'provider' => 'drivers',
+        ],
+
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
+
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => null,
+        ],
     ],
-  ],
 
-  'providers' => [
-    'drivers' => [
-      'driver' => 'eloquent',
-      'model' => App\Models\Driver::class,
+    /*
+    |--------------------------------------------------------------------------
+    | Providers
+    |--------------------------------------------------------------------------
+    */
+
+    'providers' => [
+        'drivers' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Driver::class,
+        ],
+
+        'admins' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Admin::class,
+        ],
     ],
 
-    'admins' => [
-      'driver' => 'eloquent',
-      'model' => App\Models\Admin::class,
+    /*
+    |--------------------------------------------------------------------------
+    | Password reset brokers
+    |--------------------------------------------------------------------------
+    */
+
+    'passwords' => [
+        'admins' => [
+            'provider' => 'admins',
+            'driver' => 'cache',
+            'expire' => 60,
+            'throttle' => 5,
+        ],
     ],
-  ],
-
-  'passwords' => [
-    'admins' => [
-      'provider' => 'admins',
-      'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
-      'expire' => 60,
-      'throttle' => 60,
-    ],
-  ],
-
-  'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
-
 ];

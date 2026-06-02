@@ -11,12 +11,17 @@ abstract class BaseUser extends User
 {
     abstract protected function type(): UserType;
 
+    public function getRouteKeyName()
+    {
+        return 'uuid';
+    }
+
     public function resolveRouteBinding($value, $field = null)
     {
-        $user = Auth::user();
         $id = $value;
 
         if ($value === 'me') {
+            $user = Auth::user();
             if ( $user === null || $this->type() !== $user->type()) {
                 throw new RecordNotFoundException();
             }

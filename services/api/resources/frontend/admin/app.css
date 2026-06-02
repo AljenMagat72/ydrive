@@ -1,0 +1,38 @@
+@import '../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../app/Filament/**/*';
+@source './pages/**/*';
+@source './livewire/**/*';
+
+.fi-btn[class*="fi-color-"]:is([class*="fi-bg-color-"]) {
+  background-color: var(--color-600) !important;
+  color: white !important;
+}
+
+.fi-btn[class*="fi-color-"]:hover:is([class*="fi-bg-color-"]) {
+  background-color: var(--color-500) !important;
+  color: white !important;
+}
+
+.fi-btn[class*="fi-color-"]:is([class*="fi-bg-color-"]) svg {
+  color: inherit !important;
+}
+
+.bg-striped {
+  background: repeating-linear-gradient(
+    to right,
+    var(--color-100) 0,
+    var(--color-100) calc(100% / 24),
+    var(--color-200) calc(100% / 24),
+    var(--color-200) calc(100% / 12)
+  );
+}
+
+.dark .bg-striped {
+  background: repeating-linear-gradient(to right,
+  var(--color-800) 0,
+  var(--color-800) calc(100% / 24),
+  var(--color-900) calc(100% / 24),
+  var(--color-900) calc(100% / 12)
+  );
+}

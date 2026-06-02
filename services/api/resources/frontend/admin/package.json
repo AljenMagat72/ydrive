@@ -1,0 +1,18 @@
+{
+  "name": "admin",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.4",
+    "tailwindcss": "^4.2.4"
+  },
+  "dependencies": {
+    "vite": "^8.0.10"
+  }
+}

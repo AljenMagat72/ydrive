@@ -1,6 +1,13 @@
 {
   "dependencies": {
-    "@prettier/plugin-php": "^0.24.0",
-    "prettier": "^3.8.1"
+    "turbo": "^2.9.9"
+  },
+  "workspaces": [
+    "resources/frontend/*",
+    "resources/packages/*"
+  ],
+  "packageManager": "npm@11.5.1",
+  "devDependencies": {
+    "@laravel/vite-plugin-wayfinder": "^0.1.7"
   }
 }
