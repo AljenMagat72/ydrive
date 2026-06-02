@@ -9,19 +9,15 @@ export default defineConfig({
   root: '../../../',
   cacheDir: resolve(__dirname, 'node_modules/.vite'),
   plugins: [
+    wayfinder({
+      path: './src/wayfinder',
+      command: 'php ../../../artisan wayfinder:generate',
+    }),
     laravel({
       input: ['./src/main.ts'],
       buildDirectory: 'build/driver-portal',
       hotFile: '../../../public/hot/driver-portal',
       refresh: true,
-    }),
-    wayfinder({
-      path: './src/wayfinder',
-      command: 'php ../../../artisan wayfinder:generate',
-      patterns: [
-        'routes/api.php',
-        'routes/frontend/driver.php',
-      ],
     }),
     tailwindcss(),
     vue(),
