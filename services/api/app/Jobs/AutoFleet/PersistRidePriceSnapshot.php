@@ -43,9 +43,9 @@ class PersistRidePriceSnapshot implements ShouldQueue
   public function handle(AutofleetApi $autofleetApi): void
   {
     $data = Arr::get($this->payload, 'data');
-    $pc = is_array($data) ? Arr::get($data, 'priceCalculation') : null;
+    $priceCalculation = is_array($data) ? Arr::get($data, 'priceCalculation') : null;
 
-    if (! is_array($pc) || empty($pc['id']) || empty($pc['rideId'])) {
+    if (! is_array($priceCalculation) || empty($priceCalculation['id']) || empty($priceCalculation['rideId'])) {
       Log::warning('AF price snapshot: missing priceCalculation', [
         'has_data' => is_array($data),
       ]);
@@ -53,31 +53,27 @@ class PersistRidePriceSnapshot implements ShouldQueue
       return;
     }
 
-    $rideId = (string) $pc['rideId'];
+    $rideId = (string) $priceCalculation['rideId'];
     $driverIdFromWebhook = $this->nullableUuid(
-      Arr::get($pc, 'driverId') ?? (is_array($data) ? Arr::get($data, 'driverId') : null)
+      Arr::get($priceCalculation, 'driverId') ?? (is_array($data) ? Arr::get($data, 'driverId') : null)
     );
 
     [$clientIdFromRide, $driverIdFromRide] = $this->fetchRideClientAndDriverIds($autofleetApi, $rideId);
 
     $driverId = $driverIdFromRide ?? $driverIdFromWebhook;
-
-    $snapshot = RidePriceSnapshot::firstOrNew(['ride_id' => $rideId]);
-    $isNew = ! $snapshot->exists;
-
-    $snapshot->ride_id = $rideId;
-    $snapshot->price_calculation_id = (string) $pc['id'];
+ 
+    $snapshot->price_calculation_id = (string) $priceCalculation['id'];
     $snapshot->business_model_id = $this->nullableUuid(
-      Arr::get($pc, 'businessModelId') ?? (is_array($data) ? Arr::get($data, 'businessModelId') : null)
+      Arr::get($priceCalculation, 'businessModelId') ?? (is_array($data) ? Arr::get($data, 'businessModelId') : null)
     );
-    $snapshot->pricing_policy_id = $this->nullableUuid(Arr::get($pc, 'pricingPolicyId'));
-    $snapshot->demand_source_id = $this->nullableUuid(Arr::get($pc, 'demandSourceId'));
-    $snapshot->currency = $this->nullableShortString(Arr::get($pc, 'currency'), 10);
-    $snapshot->calculation_reason = $this->nullableString(Arr::get($pc, 'calculationReason'));
-    $snapshot->base_price = $this->decimalOrZero(Arr::get($pc, 'basePrice'));
-    $snapshot->surge_price = $this->decimalOrZero(Arr::get($pc, 'surgePrice'));
-    $snapshot->total_price = $this->decimalOrZero(Arr::get($pc, 'totalPrice'));
-    $snapshot->total_driver_earnings = $this->resolveTotalDriverEarnings($pc);
+    $snapshot->pricing_policy_id = $this->nullableUuid(Arr::get($priceCalculation, 'pricingPolicyId'));
+    $snapshot->demand_source_id = $this->nullableUuid(Arr::get($priceCalculation, 'demandSourceId'));
+    $snapshot->currency = $this->nullableShortString(Arr::get($priceCalculation, 'currency'), 10);
+    $snapshot->calculation_reason = $this->nullableString(Arr::get($priceCalculation, 'calculationReason'));
+    $snapshot->base_price = $this->decimalOrZero(Arr::get($priceCalculation, 'basePrice'));
+    $snapshot->surge_price = $this->decimalOrZero(Arr::get($priceCalculation, 'surgePrice'));
+    $snapshot->total_price = $this->decimalOrZero(Arr::get($priceCalculation, 'totalPrice'));
+    $snapshot->total_driver_earnings = $this->resolveTotalDriverEarnings($priceCalculation);
 
     if ($clientIdFromRide !== null) {
       $snapshot->client_id = $clientIdFromRide;
@@ -157,13 +153,13 @@ class PersistRidePriceSnapshot implements ShouldQueue
    * Ride-level driver payout: use `totalDriverEarnings` when Autofleet sends it;
    * otherwise `driverEarnings`. Both refer to the same ride (no aggregation from `items`).
    */
-  private function resolveTotalDriverEarnings(array $pc): float
+  private function resolveTotalDriverEarnings(array $priceCalculation): float
   {
-    if (array_key_exists('totalDriverEarnings', $pc) && $pc['totalDriverEarnings'] !== null && $pc['totalDriverEarnings'] !== '') {
-      return (float) $pc['totalDriverEarnings'];
+    if (array_key_exists('totalDriverEarnings', $priceCalculation) && $priceCalculation['totalDriverEarnings'] !== null && $priceCalculation['totalDriverEarnings'] !== '') {
+      return (float) $priceCalculation['totalDriverEarnings'];
     }
 
-    return $this->decimalOrZero(Arr::get($pc, 'driverEarnings'));
+    return $this->decimalOrZero(Arr::get($priceCalculation, 'driverEarnings'));
   }
 
   private function nullableUuid(mixed $value): ?string
