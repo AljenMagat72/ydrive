@@ -16,6 +16,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Request;
 use View;
@@ -42,7 +43,7 @@ class AppServiceProvider extends ServiceProvider
                 return Route::prefix($name)->middleware($middleware)->group($routes);
             }
 
-            return Route::domain("$name.".parse_url(config('app.url'), PHP_URL_HOST))->middleware($middleware)->group($routes);
+            return Route::domain("$name." . parse_url(config('app.url'), PHP_URL_HOST))->middleware($middleware)->group($routes);
         });
     }
 
@@ -57,6 +58,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Driver::class, DriverPolicy::class);
 
         View::addNamespace('admin', base_path('resources/frontend/admin'));
+
+        if (!$this->app->environment('local')) {
+            URL::forceScheme('https');
+        }
 
         if (config('features.zoho_rider_sync')) {
             Client::observe(ZohoClientObserver::class);
