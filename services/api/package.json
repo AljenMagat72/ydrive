@@ -7,11 +7,6 @@
     "resources/packages/*"
   ],
   "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev"
   },
-  "packageManager": "npm@11.5.1",
-  "devDependencies": {
-    "@laravel/vite-plugin-wayfinder": "^0.1.7"
-  }
+  "packageManager": "npm@11.5.1"
 }
