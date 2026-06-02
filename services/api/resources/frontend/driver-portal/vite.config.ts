@@ -11,7 +11,7 @@ export default defineConfig({
   plugins: [
     wayfinder({
       path: './src/wayfinder',
-      command: 'php ../../../artisan wayfinder:generate',
+      command: `php ${resolve(__dirname, '../../../artisan')} wayfinder:generate`,
     }),
     laravel({
       input: ['./src/main.ts'],
