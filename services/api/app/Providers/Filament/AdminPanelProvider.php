@@ -73,7 +73,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->spa();
 
-        if (app()->environment('local')) {
+        if (!app()->environment('production')) {
             $panel->path('admin');
         } else {
             $panel->domain('admin');

@@ -38,7 +38,7 @@ class AppServiceProvider extends ServiceProvider
         Route::macro('mount', function (string $name, array $middleware = []) {
             $routes = fn() => require base_path("routes/frontend/{$name}.php");
 
-            if (app()->environment('local')) {
+            if (!app()->environment('production')) {
                 return Route::prefix($name)->middleware($middleware)->group($routes);
             }
 
