@@ -10,7 +10,7 @@ export default defineConfig({
   cacheDir: resolve(__dirname, 'node_modules/.vite'),
   plugins: [
     wayfinder({
-      path: './src/wayfinder',
+      path: resolve(__dirname, './src/wayfinder'),
       command: `php ${resolve(__dirname, '../../../artisan')} wayfinder:generate`,
     }),
     laravel({
