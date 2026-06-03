@@ -60,4 +60,5 @@ class AutofleetAuthenticationService
         Cache::set($this->refreshTokenKey, $refreshToken);
         $this->refreshToken();
     }
+
 }
