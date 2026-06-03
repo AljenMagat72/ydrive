@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\AutoFleetService;
-use App\Services\DriverService;
+use App\Services\Driver\DriverService;
 use Illuminate\Console\Command;
 
 class PopulateDrivers extends Command

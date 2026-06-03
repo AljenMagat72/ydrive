@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Services\DriverService;
+use App\Services\Driver\DriverService;
 use Illuminate\Contracts\Broadcasting\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;

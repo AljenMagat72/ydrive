@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Driver;
-use App\Services\DriverService;
+use App\Services\Driver\DriverService;
 
 class RevertDelinquent extends Command
 {

@@ -6,9 +6,12 @@ use App\Enums\Role;
 use App\Enums\UserType;
 use App\Models\BaseUser;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Activitylog\Models\Concerns\HasActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * @property Role $role
@@ -44,7 +47,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class Admin extends BaseUser implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens, HasActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -56,6 +59,7 @@ class Admin extends BaseUser implements MustVerifyEmail
         'email',
         'role',
         'password',
+        'email_verified_at',
     ];
 
     /**
@@ -66,6 +70,7 @@ class Admin extends BaseUser implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        'email_verified_at',
     ];
 
     /**
@@ -83,7 +88,23 @@ class Admin extends BaseUser implements MustVerifyEmail
         'role' => 'admin',
     ];
 
-    public function type(): UserType {
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->logExcept(['password', 'remember_token', 'updated_at', 'created_at']);
+    }
+
+    public function type(): UserType
+    {
         return UserType::ADMIN;
+    }
+
+    protected function status() : Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->email_verified_at !== null ? 'Active' : 'Invited',
+        );
     }
 }

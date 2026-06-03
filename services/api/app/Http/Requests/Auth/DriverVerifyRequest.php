@@ -6,22 +6,23 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class DriverVerifyRequest extends FormRequest
 {
-  /**
-   * Get the validation rules that apply to the request.
-   *
-   * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-   */
-  public function rules(): array
-  {
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
 
-    $rules = [
-      'code' => 'required|string|size:6',
-    ];
+        $rules = [
+            'phoneNumber' => 'required|phone',
+            'code' => 'required|string|size:6',
+        ];
 
-    if (config('recaptchav3.enabled')) {
-      $rules['captcha'] = 'required|recaptchav3:verify,0.3';
+        if (config('recaptchav3.enabled')) {
+            $rules['captcha'] = 'required|recaptchav3:verify,0.3';
+        }
+
+        return $rules;
     }
-
-    return $rules;
-  }
 }

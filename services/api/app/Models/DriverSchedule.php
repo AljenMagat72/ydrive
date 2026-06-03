@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * @property int $id
@@ -30,86 +32,35 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class DriverSchedule extends Model
 {
-  protected $fillable = [
-    'driver_id',
-    'starts_at',
-    'ends_at',
-  ];
+    use LogsActivity, SoftDeletes;
 
-  protected $casts = [
-    'starts_at' => 'datetime',
-    'ends_at' => 'datetime',
-  ];
+    protected $fillable = [
+        'driver_id',
+        'starts_at',
+        'ends_at',
+        'uuid',
+    ];
 
-  protected static function booted(): void
-  {
-    static::created(function (DriverSchedule $schedule) {
-      $driver = $schedule->driver;
-      $date = $schedule->starts_at->toDateString();
+    protected $casts = [
+        'starts_at' => 'datetime',
+        'ends_at' => 'datetime',
+    ];
 
-      Log::info("Driver $driver->first_name $driver->last_name created $date", [
-        'id' => $schedule->id,
-        'driver_id' => $schedule->driver_id,
-        'starts_at' => $schedule->starts_at?->toDateTimeString(),
-        'ends_at' => $schedule->ends_at?->toDateTimeString(),
-        'created_at' => $schedule->created_at?->toDateTimeString(),
-        'updated_at' => $schedule->updated_at?->toDateTimeString(),
-      ]);
-    });
+    public function getRouteKeyName()
+    {
+        return 'uuid';
+    }
 
-    static::updated(function (DriverSchedule $schedule) {
-      $driver = $schedule->driver;
-      $date = $schedule->starts_at->toDateString();
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->logExcept(['updated_at', 'created_at']);
+    }
 
-      Log::info("Driver $driver->first_name $driver->last_name updated $date", [
-        'id' => $schedule->id,
-        'original' => $schedule->getOriginal(),
-        'changes' => $schedule->getChanges(),
-      ]);
-    });
-
-    static::deleted(function (DriverSchedule $schedule) {
-      $driver = $schedule->driver;
-      $date = $schedule->starts_at->toDateString();
-
-      Log::info("Driver $driver->first_name $driver->last_name deleted $date", [
-        'id' => $schedule->id,
-        'driver_id' => $schedule->driver_id,
-        'starts_at' => $schedule->starts_at?->toDateTimeString(),
-        'ends_at' => $schedule->ends_at?->toDateTimeString(),
-        'created_at' => $schedule->created_at?->toDateTimeString(),
-        'updated_at' => $schedule->updated_at?->toDateTimeString(),
-      ]);
-    });
-  }
-
-  public function hoursInRange(Carbon $rangeStart, Carbon $rangeEnd): float
-  {
-    $start = max($this->starts_at->timestamp, $rangeStart->timestamp);
-    $end = min($this->ends_at->timestamp, $rangeEnd->timestamp);
-
-    return max(0, ($end - $start) / 3600);
-  }
-
-  public function driver(): BelongsTo
-  {
-    return $this->belongsTo(Driver::class);
-  }
-
-  public function setEndsAtAttribute($value)
-  {
-      $startsAt = isset($this->attributes['starts_at'])
-          ? Carbon::parse($this->attributes['starts_at'])
-          : Carbon::now();
-
-      $endsTime = Carbon::parse($value)->format('H:i:s');
-      $endsAt = Carbon::parse($startsAt->toDateString() . ' ' . $endsTime);
-
-      if ($endsAt->lessThanOrEqualTo($startsAt)) {
-          $endsAt->addDay();
-      }
-
-      $this->attributes['ends_at'] = $endsAt;
-  }
-
+    public function driver(): BelongsTo
+    {
+        return $this->belongsTo(Driver::class);
+    }
 }

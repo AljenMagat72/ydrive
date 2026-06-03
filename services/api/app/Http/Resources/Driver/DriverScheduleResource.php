@@ -17,7 +17,8 @@ class DriverScheduleResource extends JsonResource
     return [
       'startsAt' => $this->starts_at->format('Y-m-d\TH:i:s'),
       'endsAt' => $this->ends_at->format('Y-m-d\TH:i:s'),
-      'driver' => new DriverResource($this->whenLoaded('driver')),
+      'id' => $this->uuid,
+      'driverId' => $this->driver->uuid
     ];
   }
 }

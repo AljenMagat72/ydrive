@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Driver;
-use App\Services\DriverService;
+use App\Services\Driver\DriverService;
 use App\Jobs\ConfirmScheduledHours;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;

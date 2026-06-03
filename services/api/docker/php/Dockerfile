@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libonig-dev \
     libfreetype6-dev \
+    libicu-dev \
     libzip-dev \
     locales \
     zip \
@@ -16,8 +17,11 @@ RUN apt-get update && apt-get install -y \
     git \
     curl
 
+# Configure extensions that need it
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+
 # PHP extensions
-RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd zip
+RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd zip intl
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
