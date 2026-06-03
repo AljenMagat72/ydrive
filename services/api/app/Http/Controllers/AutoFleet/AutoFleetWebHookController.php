@@ -193,40 +193,27 @@ class AutoFleetWebHookController extends Controller
             ->notify(new FiveStarRideNotification());
     }
 
-  public function priceChange(Request $request)
-  {
-    $fullPayload = $request->all();
-   // Log::info('AF price update: received', ['payload' => $fullPayload]);
-
-    $validator = Validator::make($fullPayload, [
-      'data.priceCalculation.id' => ['required', 'uuid'],
-      'data.priceCalculation.rideId' => ['required', 'uuid'],
-    ]);
-
-    if ($validator->fails()) {
-      Log::error('AF price update: invalid payload', [
-        'errors' => $validator->errors()->toArray(),
-        'payload' => $fullPayload,
+    public function priceChange(Request $request)
+    {
+      $fullPayload = $request->all();
+   
+      $validator = Validator::make($fullPayload, [
+        'data.priceCalculation.id' => ['required', 'uuid'],
+        'data.priceCalculation.rideId' => ['required', 'uuid'],
       ]);
 
-      return response()->json(['status' => 'error', 'message' => 'Invalid payload'], 422);
+      if ($validator->fails()) {
+        Log::error('AF price update: invalid payload', [
+          'errors' => $validator->errors()->toArray(),
+          'payload' => $fullPayload,
+        ]);
+
+        return response()->json(['status' => 'error', 'message' => 'Invalid payload'], 422);
+      }
+
+      PersistRidePriceSnapshot::dispatchSync($fullPayload);
+
+      return response()->json(['status' => 'ok']);
     }
-
-    PersistRidePriceSnapshot::dispatchSync($fullPayload);
-
-    return response()->json(['status' => 'ok']);
-  }
-
-  public function rideUpdated(Request $request)
-  {
-    if (config('features.notifications.ride_cancellation')) {
-      $this->handleCancellation($request);
-    }
-    if (config('features.notifications.five_star_review')) {
-      $this->handleCompletionWithReview($request);
-    }
-
-    return response()->json(['status' => 'ok']);
-  }
 
 }

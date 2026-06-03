@@ -71,6 +71,8 @@ class AutofleetApi extends Connector
     public function rides()
     {
         return new RidesResource($this);
+    }
+    
     public function drivers()
     {
         return new DriversResource($this);
