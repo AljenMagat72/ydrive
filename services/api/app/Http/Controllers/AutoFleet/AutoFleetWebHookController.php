@@ -208,7 +208,9 @@ class AutoFleetWebHookController extends Controller
           'payload' => $fullPayload,
         ]);
 
-        return response()->json(['status' => 'error', 'message' => 'Invalid payload'], 422);
+        throw new \RuntimeException(
+          'AutoFleet price change webhook: invalid payload'
+        );
       }
 
       PersistRidePriceSnapshot::dispatchSync($fullPayload);
