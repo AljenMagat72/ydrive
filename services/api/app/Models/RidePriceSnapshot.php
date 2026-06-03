@@ -14,13 +14,13 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $price_calculation_id
  * @property string|null $business_model_id
  * @property string|null $pricing_policy_id
- * @property string|null $demand_source_id
  * @property string|null $currency
  * @property string|null $calculation_reason
  * @property string $base_price
  * @property string $surge_price
  * @property string $total_price
  * @property string $total_driver_earnings
+ * @property array|null $items
  * @property string $payout_status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -41,13 +41,13 @@ class RidePriceSnapshot extends Model
     'price_calculation_id',
     'business_model_id',
     'pricing_policy_id',
-    'demand_source_id',
     'currency',
     'calculation_reason',
     'base_price',
     'surge_price',
     'total_price',
     'total_driver_earnings',
+    'items',
     'payout_status',
   ];
 
@@ -58,6 +58,7 @@ class RidePriceSnapshot extends Model
       'surge_price' => 'decimal:4',
       'total_price' => 'decimal:4',
       'total_driver_earnings' => 'decimal:4',
+      'items' => 'array',
     ];
   }
 }

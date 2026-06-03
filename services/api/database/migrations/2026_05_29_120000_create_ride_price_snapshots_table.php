@@ -21,7 +21,6 @@ return new class extends Migration
 
       $table->uuid('business_model_id')->nullable()->index();
       $table->uuid('pricing_policy_id')->nullable();
-      $table->uuid('demand_source_id')->nullable();
 
       // Price info
       $table->string('currency', 10)->nullable();
@@ -32,6 +31,8 @@ return new class extends Migration
       $table->decimal('total_price', 12, 4)->default(0);
 
       $table->decimal('total_driver_earnings', 12, 4)->default(0);
+
+      $table->json('items')->nullable();
 
       $table->string('payout_status')->default('to_be_settled')->index();
 
