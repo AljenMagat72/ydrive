@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\RidePriceSnapshotPayoutStatus;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -21,19 +22,13 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $total_price
  * @property string $total_driver_earnings
  * @property array|null $items
- * @property string $payout_status
+ * @property RidePriceSnapshotPayoutStatus $payout_status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @mixin \Eloquent
  */
 class RidePriceSnapshot extends Model
 {
-  public const PAYOUT_STATUS_TO_BE_SETTLED = 'to_be_settled';
-
-  public const PAYOUT_STATUS_IN_PROGRESS = 'in_progress';
-
-  public const PAYOUT_STATUS_SETTLED = 'settled';
-
   protected $fillable = [
     'ride_id',
     'client_id',
@@ -59,6 +54,7 @@ class RidePriceSnapshot extends Model
       'total_price' => 'decimal:4',
       'total_driver_earnings' => 'decimal:4',
       'items' => 'array',
+      'payout_status' => RidePriceSnapshotPayoutStatus::class,
     ];
   }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Jobs\AutoFleet;
 
+use App\Enums\RidePriceSnapshotPayoutStatus;
 use App\Http\Integrations\Autofleet\AutofleetApi;
 use App\Models\RidePriceSnapshot;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -93,7 +94,7 @@ class PersistRidePriceSnapshot implements ShouldQueue
     }
 
     if ($isNew) {
-      $snapshot->payout_status = RidePriceSnapshot::PAYOUT_STATUS_TO_BE_SETTLED;
+      $snapshot->payout_status = RidePriceSnapshotPayoutStatus::TO_BE_SETTLED;
     }
 
     $snapshot->save();
