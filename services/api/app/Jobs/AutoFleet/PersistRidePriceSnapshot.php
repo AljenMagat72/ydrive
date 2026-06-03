@@ -149,8 +149,8 @@ class PersistRidePriceSnapshot implements ShouldQueue
       return [null, null];
     }
 
-    $clientId = $this->uuidOrNull(data_get($ride, 'clientId') ?? data_get($ride, 'client_id'));
-    $driverId = $this->uuidOrNull(data_get($ride, 'driverId') ?? data_get($ride, 'driver_id'));
+    $clientId = $this->uuidOrNull(data_get($ride, 'clientId'));
+    $driverId = $this->uuidOrNull(data_get($ride, 'driverId'));
 
     return [$clientId, $driverId];
   }
