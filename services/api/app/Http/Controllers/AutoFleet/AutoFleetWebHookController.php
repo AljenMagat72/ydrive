@@ -218,4 +218,16 @@ class AutoFleetWebHookController extends Controller
       return response()->json(['status' => 'ok']);
     }
 
+    public function additionalChargeAdded(Request $request)
+    {
+      $fullPayload = $request->all();
+
+      $validator = Validator::make($fullPayload, [
+        'data.id' => ['required', 'uuid'],
+      ]);
+
+      Log::info('AF additional charge added: ', ['payload' => $fullPayload]);
+
+      return response()->json(['status' => 'ok']);
+    }
 }
