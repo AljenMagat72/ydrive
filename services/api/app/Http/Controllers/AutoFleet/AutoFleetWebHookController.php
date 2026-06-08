@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\AutoFleet\PersistRideAdditionalCharge;
 use App\Jobs\AutoFleet\PersistRidePriceSnapshot;
 use App\Services\AutoFleetService;
 use App\Models\ClientNotification;
@@ -224,9 +225,25 @@ class AutoFleetWebHookController extends Controller
 
       $validator = Validator::make($fullPayload, [
         'data.id' => ['required', 'uuid'],
+        'data.amount' => ['required', 'numeric'],
+        'data.chargeFor' => ['required', 'string'],
+        'data.priceCalculationId' => ['required', 'uuid'],
+        'data.businessModelId' => ['nullable', 'uuid'],
+        'data.description' => ['nullable', 'string'],
       ]);
 
-      Log::info('AF additional charge added: ', ['payload' => $fullPayload]);
+      if ($validator->fails()) {
+        Log::error('AF additional charge: invalid payload', [
+          'errors' => $validator->errors()->toArray(),
+          'payload' => $fullPayload,
+        ]);
+
+        throw new \RuntimeException(
+          'AutoFleet additional charge webhook: invalid payload'
+        );
+      }
+
+      PersistRideAdditionalCharge::dispatchSync($fullPayload);
 
       return response()->json(['status' => 'ok']);
     }
