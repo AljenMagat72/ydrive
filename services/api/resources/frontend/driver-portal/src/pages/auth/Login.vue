@@ -192,7 +192,7 @@ function back() {
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
-                <FieldError v-if="errors?.otp">Invalid code</FieldError>
+                <FieldError v-if="errors?.code">Invalid code</FieldError>
               </Field>
             </FieldGroup>
 

@@ -12,6 +12,7 @@ use App\Services\Driver\DriverService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class DriverAuthController extends Controller
 {
@@ -37,10 +38,9 @@ class DriverAuthController extends Controller
         $result = $driver->consumeOneTimePassword($request->input('code'));
 
         if (!$result->isOk()) {
-            return response()->json([
-                'success' => false,
-                'message' => $result->validationMessage(),
-            ], 422);
+            throw ValidationException::withMessages([
+                'code' => [$result->validationMessage()],
+            ]);
         }
 
         Auth::guard('driver')->login($driver);

@@ -41,6 +41,10 @@ return [
             'business_model' => 'sudbury',
             'timezone' => 'America/Toronto',
         ],
+        'grande_praire' => [
+            'business_model' => 'grande_praire',
+            'timezone' => 'America/Edmonton',
+        ],
         'medicine_hat' => [
             'business_model' => 'medicine_hat',
             'timezone' => 'America/Edmonton',
@@ -51,6 +55,10 @@ return [
         ],
         'lindsay' => [
             'business_model' => 'peterborough',
+            'timezone' => 'America/Toronto',
+        ],
+        'huntsville' => [
+            'business_model' => 'huntsville',
             'timezone' => 'America/Toronto',
         ],
         'lethbridge' => [

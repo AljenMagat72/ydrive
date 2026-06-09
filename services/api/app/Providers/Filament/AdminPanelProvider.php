@@ -28,7 +28,6 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('YDrive App')
             ->default()
             ->id('admin')
-
             ->login()
             ->passwordReset()
             ->profile()

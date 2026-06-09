@@ -30,6 +30,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin-key' => HandleAdminKey::class,
             'auth' => Authenticate::class
         ]);
+
+        $middleware->trustProxies(at: '*');
     })
 
 

@@ -25,14 +25,14 @@ class DriverDelinquentService
             throw new ErrorException();
         }
 
-        $noOppsId = $driver->vendor()->no_opps_id;
+        $noOppsId = $driver->vendor->no_opps_id;
 
         if ($noOppsId === null) {
             throw new ErrorException();
         }
 
         $this->autofleetApi->drivers()->update($driver->autofleet_driver_id, [
-            'vendor_id' => $noOppsId,
+            'vendorId' => $noOppsId,
         ]);
 
         $driver->update([
@@ -53,7 +53,7 @@ class DriverDelinquentService
         $vendorId = $driver->vendor->vendor_id;
 
         $this->autofleetApi->drivers()->update($driver->autofleet_driver_id, [
-            'vendor_id' => $vendorId,
+            'vendorId' => $vendorId,
         ]);
     }
 
