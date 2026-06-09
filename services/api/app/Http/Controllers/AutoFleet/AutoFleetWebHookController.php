@@ -17,6 +17,7 @@ use App\Jobs\AutoFleet\PersistRidePriceSnapshot;
 use App\Services\AutoFleetService;
 use App\Models\ClientNotification;
 use App\Models\Driver;
+use App\Models\RidePriceSnapshot;
 use App\Enums\ClientNotificationType;
 use App\Enums\RideStates;
 use Notification;
@@ -40,6 +41,8 @@ class AutoFleetWebHookController extends Controller
 
     public function rideUpdated(Request $request)
     {
+        $this->syncRidePriceSnapshotParticipants($request);
+
         if (config('features.notifications.ride_cancellation')) {
             $this->handleCancellation($request);
         }
@@ -48,6 +51,64 @@ class AutoFleetWebHookController extends Controller
         }
 
         return response()->json(['status' => 'ok']);
+    }
+
+    private function syncRidePriceSnapshotParticipants(Request $request): void
+    {
+        $rideId = $request->input('data.id');
+        $state = $request->input('data.state');
+
+        if (! in_array($state, [RideStates::COMPLETED->value, RideStates::CANCELED->value], true)) {
+            return;
+        }
+
+        if (! is_string($rideId) || ! Str::isUuid($rideId)) {
+            return;
+        }
+
+        $snapshot = RidePriceSnapshot::where('ride_id', $rideId)->first();
+
+        if ($snapshot === null) {
+            Log::info('AF price snapshot: no snapshot to sync participants', [
+                'ride_id' => $rideId,
+                'state' => $state,
+            ]);
+
+            return;
+        }
+
+        $clientId = $this->uuidOrNull($request->input('data.clientId'));
+        $driverId = $this->uuidOrNull($request->input('data.driverId'));
+
+        $updated = false;
+
+        if ($clientId !== null) {
+            $snapshot->client_id = $clientId;
+            $updated = true;
+        }
+
+        if ($driverId !== null) {
+            $snapshot->driver_id = $driverId;
+            $updated = true;
+        }
+
+        if (! $updated) {
+            return;
+        }
+
+        $snapshot->save();
+
+        Log::info('AF price snapshot: synced participants', [
+            'ride_id' => $rideId,
+            'client_id' => $snapshot->client_id,
+            'driver_id' => $snapshot->driver_id,
+            'state' => $state,
+        ]);
+    }
+
+    private function uuidOrNull(mixed $value): ?string
+    {
+        return is_string($value) && $value !== '' && Str::isUuid($value) ? $value : null;
     }
 
     private function handleCancellation(Request $request)
