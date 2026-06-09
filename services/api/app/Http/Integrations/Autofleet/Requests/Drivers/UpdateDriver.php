@@ -11,7 +11,7 @@ class UpdateDriver extends Request implements HasBody
 {
     use HasJsonBody;
 
-    protected Method $method = Method::POST;
+    protected Method $method = Method::PATCH;
 
     public function __construct(protected string $id, protected array $data)
     {
@@ -19,7 +19,7 @@ class UpdateDriver extends Request implements HasBody
 
     public function resolveEndpoint(): string
     {
-        return "/v1/drivers/{$this->id}";
+        return "v1/drivers/{$this->id}";
     }
 
     protected function defaultBody(): array

@@ -20,6 +20,7 @@ use App\Models\Driver;
 use App\Models\RidePriceSnapshot;
 use App\Enums\ClientNotificationType;
 use App\Enums\RideStates;
+use Illuminate\Validation\ValidationException;
 use Notification;
 
 class AutoFleetWebHookController extends Controller
@@ -122,11 +123,7 @@ class AutoFleetWebHookController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::error('ride cancellation: invalid payload', [
-                'errors' => $validator->errors()->toArray(),
-                'payload' => $request->input('data'),
-            ]);
-            return;
+            throw new ValidationException($validator);
         }
 
         $rideId = $request->input('data.id');
@@ -191,12 +188,7 @@ class AutoFleetWebHookController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::error('ride review: invalid payload', [
-                'errors' => $validator->errors()->toArray(),
-                'payload' => $request->input('data'),
-            ]);
-
-            return;
+            throw new ValidationException($validator);
         }
 
         $rideId = $request->input('data.id');
@@ -228,8 +220,7 @@ class AutoFleetWebHookController extends Controller
         $max = config('features.notifications.five_star_review_per_window');
 
         $count = Cache::get($cacheKey, 0);
-
-        if ($count === $max) {
+        if ($count >= $max) {
             Log::info('ride review: hit window limit', ['count' => $count]);
             return;
         }

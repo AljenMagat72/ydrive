@@ -28,6 +28,13 @@ use Spatie\Activitylog\Support\LogOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DriverSchedule whereUpdatedAt($value)
  * @property string $uuid
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DriverSchedule whereUuid($value)
+ * @property Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DriverSchedule onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DriverSchedule whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DriverSchedule withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DriverSchedule withoutTrashed()
  * @mixin \Eloquent
  */
 class DriverSchedule extends Model

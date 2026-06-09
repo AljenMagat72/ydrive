@@ -25,7 +25,7 @@ class UpdateLabels extends Request implements HasBody
     protected function defaultBody()
     {
         return [
-            'labels' => $this->labels
+            'payload' => $this->labels
         ];
     }
 }

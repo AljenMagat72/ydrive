@@ -74,6 +74,23 @@ use Spatie\OneTimePasswords\Models\Concerns\HasOneTimePasswords;
  * @method static Builder<static>|Driver whereZohoId($value)
  * @property string $uuid
  * @method static Builder<static>|Driver whereUuid($value)
+ * @property Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Activity> $activities
+ * @property-read int|null $activities_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Activity> $activitiesAsCauser
+ * @property-read int|null $activities_as_causer_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read mixed $name
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\OneTimePasswords\Models\OneTimePassword> $oneTimePasswords
+ * @property-read int|null $one_time_passwords_count
+ * @property-read mixed $resolved_minimum_acceptance_rate
+ * @property-read mixed $resolved_minimum_scheduled_hours
+ * @method static Builder<static>|Driver hasScheduledHours(\Illuminate\Support\Carbon $rangeStart, \Illuminate\Support\Carbon $rangeEnd)
+ * @method static Builder<static>|Driver onlyTrashed()
+ * @method static Builder<static>|Driver whereDeletedAt($value)
+ * @method static Builder<static>|Driver withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Driver withoutTrashed()
  * @mixin \Eloquent
  */
 class Driver extends BaseUser
@@ -208,6 +225,10 @@ class Driver extends BaseUser
                         ->orWhereBetween('ends_at', [$rangeStart, $rangeEnd]);
                 }
             ]);
+    }
+    public function routeNotificationForTwilio()
+    {
+        return $this->phone_number;
     }
 
     public function scopeBelowAcceptanceRate(Builder $query)

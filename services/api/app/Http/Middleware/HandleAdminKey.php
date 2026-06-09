@@ -15,14 +15,15 @@ class HandleAdminKey
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $adminKey = $request->header('X-Admin-Key');
+        $adminKey = $request->header('X-Admin-Key') ?? $request->query('admin-key');
+
         $expectedKey = config('app.admin_key');
 
         if (empty($expectedKey) || empty($adminKey) || !hash_equals($expectedKey, $adminKey)) {
             abort(404, 'Not found');
         }
 
-        if ($request->header('X-Admin-Key') === config('app.admin_key')) {
+        if ($adminKey === config('app.admin_key')) {
             $request->attributes->set('is_admin', true);
         }
 

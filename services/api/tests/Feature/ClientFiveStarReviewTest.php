@@ -32,7 +32,7 @@ test('creates notification when client gives five star review', function () {
     'driver_id' => $driverId,
     'notification_type' => ClientNotificationType::FIVE_STAR_REVIEW->value,
   ])->count())->toBe(1);
-  
+
   Notification::assertSentOnDemand(FiveStarRideNotification::class);
 });
 
@@ -65,8 +65,8 @@ test('does not create more than max per window', function () {
   expect(ClientNotification::where([
     'notification_type' => ClientNotificationType::FIVE_STAR_REVIEW->value,
   ])->count())->toBe(1);
-  
-  Notification::assertSentOnDemand(FiveStarRideNotification::class, 1);
+
+  Notification::assertSentOnDemandTimes(FiveStarRideNotification::class, 1);
 });
 
 test('resets rate limit after window expires', function () {
@@ -120,7 +120,7 @@ test('does not create notification for ratings below five stars', function () {
     'client_id' => $clientId,
     'notification_type' => ClientNotificationType::FIVE_STAR_REVIEW->value,
   ])->count())->toBe(0);
-  
+
   Notification::assertNothingSent();
 });
 
@@ -152,7 +152,7 @@ test('prevents duplicate five star review notifications per client', function ()
     'client_id' => $clientId,
     'notification_type' => ClientNotificationType::FIVE_STAR_REVIEW->value,
   ])->count())->toBe(1);
-  
+
   Notification::assertSentOnDemandTimes(FiveStarRideNotification::class, 1);
 });
 
@@ -184,7 +184,7 @@ test('allows different clients to each have five star review notification', func
   expect(ClientNotification::where([
     'notification_type' => ClientNotificationType::FIVE_STAR_REVIEW->value,
   ])->count())->toBe(2);
-  
+
   Notification::assertSentOnDemandTimes(FiveStarRideNotification::class, 2);
 });
 
@@ -197,12 +197,12 @@ test('handles invalid payload for review gracefully', function () {
     ]
   ]);
 
-  $response->assertStatus(200);
+  $response->assertStatus(422);
 
   expect(ClientNotification::where([
     'notification_type' => ClientNotificationType::FIVE_STAR_REVIEW->value,
   ])->count())->toBe(0);
-  
+
   Notification::assertNothingSent();
 });
 
@@ -213,12 +213,12 @@ test('handles missing required fields for review gracefully', function () {
     ]
   ]);
 
-  $response->assertStatus(200);
+  $response->assertStatus(422);
 
   expect(ClientNotification::where([
     'notification_type' => ClientNotificationType::FIVE_STAR_REVIEW->value,
   ])->count())->toBe(0);
-  
+
   Notification::assertNothingSent();
 });
 
@@ -240,7 +240,7 @@ test('handles zero rating', function () {
     'client_id' => $clientId,
     'notification_type' => ClientNotificationType::FIVE_STAR_REVIEW->value,
   ])->count())->toBe(0);
-  
+
   Notification::assertNothingSent();
 });
 
@@ -262,7 +262,7 @@ test('handles negative rating', function () {
     'client_id' => $clientId,
     'notification_type' => ClientNotificationType::FIVE_STAR_REVIEW->value,
   ])->count())->toBe(0);
-  
+
   Notification::assertNothingSent();
 });
 
@@ -284,7 +284,7 @@ test('handles rating above five', function () {
     'client_id' => $clientId,
     'notification_type' => ClientNotificationType::FIVE_STAR_REVIEW->value,
   ])->count())->toBe(0);
-  
+
   Notification::assertNothingSent();
 });
 
@@ -308,7 +308,7 @@ test('stores driver id correctly in notification', function () {
   ])->first();
 
   expect($notification->driver_id)->toBe($driverId);
-  
+
   Notification::assertSentOnDemand(FiveStarRideNotification::class);
 });
 
@@ -331,6 +331,6 @@ test('handles missing driver id field', function () {
 
   expect($notification)->not->toBeNull();
   expect($notification->driver_id)->toBeNull();
-  
+
   Notification::assertSentOnDemand(FiveStarRideNotification::class);
 });

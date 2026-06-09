@@ -19,6 +19,12 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RegistrationToken whereRole($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RegistrationToken whereToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RegistrationToken whereUpdatedAt($value)
+ * @property int $admin_id
+ * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property \Illuminate\Support\Carbon|null $accepted_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AdminInvite whereAcceptedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AdminInvite whereAdminId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AdminInvite whereExpiresAt($value)
  * @mixin \Eloquent
  */
 class AdminInvite extends Model

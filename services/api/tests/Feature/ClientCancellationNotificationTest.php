@@ -34,7 +34,7 @@ test('creates notification when ride is cancelled with valid payment method', fu
     'client_id' => $clientId,
     'notification_type' => ClientNotificationType::CANCELLED->value,
   ])->count())->toBe(1);
-  
+
   Notification::assertSentOnDemand(RideCancelledNotification::class);
 });
 
@@ -76,7 +76,7 @@ test('prevents duplicate notifications for same cancelled ride', function () {
     'client_id' => $clientId,
     'notification_type' => ClientNotificationType::CANCELLED->value,
   ])->count())->toBe(1);
-  
+
   Notification::assertSentOnDemandTimes(RideCancelledNotification::class, 1);
 });
 
@@ -117,7 +117,7 @@ test('does not create notification for non-uuid payment methods', function () {
     'client_id' => $clientId,
     'notification_type' => ClientNotificationType::CANCELLED->value,
   ])->count())->toBe(0);
-  
+
   Notification::assertNothingSent();
 });
 
@@ -145,7 +145,7 @@ test('does not create notification when price amount is not zero', function () {
     'client_id' => $clientId,
     'notification_type' => ClientNotificationType::CANCELLED->value,
   ])->count())->toBe(0);
-  
+
   Notification::assertNothingSent();
 });
 
@@ -172,7 +172,7 @@ test('does not create notification for non-cancelled ride states', function () {
     'ride_id' => $rideId,
     'client_id' => $clientId,
   ])->count())->toBe(0);
-  
+
   Notification::assertNothingSent();
 });
 
@@ -185,8 +185,8 @@ test('handles invalid payload gracefully', function () {
     ]
   ]);
 
-  $response->assertStatus(200);
-  
+  $response->assertStatus(422);
+
   expect(ClientNotification::count())->toBe(0);
   Notification::assertNothingSent();
 });
@@ -198,7 +198,7 @@ test('handles missing required fields gracefully', function () {
     ]
   ]);
 
-  $response->assertStatus(200);
+  $response->assertStatus(422);
   expect(ClientNotification::count())->toBe(0);
   Notification::assertNothingSent();
 });
@@ -226,7 +226,7 @@ test('does not create notification when both price and payment method are invali
     'client_id' => $clientId,
     'notification_type' => ClientNotificationType::CANCELLED->value,
   ])->count())->toBe(0);
-  
+
   Notification::assertNothingSent();
 });
 
@@ -254,7 +254,7 @@ test('handles negative price amounts', function () {
     'client_id' => $clientId,
     'notification_type' => ClientNotificationType::CANCELLED->value,
   ])->count())->toBe(0);
-  
+
   Notification::assertNothingSent();
 });
 

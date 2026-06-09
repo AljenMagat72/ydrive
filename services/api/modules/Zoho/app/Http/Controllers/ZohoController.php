@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Modules\Zoho\Services\ZohoService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cache;
 use App\Mail\BankingUpdateRequest;
 use App\Mail\HSTGSTUpdateRequest;
 
@@ -40,53 +41,59 @@ class ZohoController extends Controller
                 ], 403);
             }
 
+            $cachedData = Cache::remember("driver_profile_{$zohoId}", now()->addHours(24), function () use ($zohoId) {
             $result = $this->zoho->getContactById($zohoId);
             $z = $result['data'][0] ?? null;
 
-            if (!$z) {
-                return response()->json(['success' => false, 'message' => 'Driver not found in Zoho'], 404);
-            }
+            if (!$z) return null;
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'id'                 => $zohoId,
-                    'Full_Name'          => $z['Full_Name'] ?? null,
-                    'City'               => $z['City'] ?? null,
-                    'Phone'              => $z['Phone'] ?? null,
-                    'Date_of_Birth'      => $z['Date_of_Birth'] ?? null,
-                    'Make'               => $z['Make'] ?? null,
-                    'Model'              => $z['Model'] ?? null,
-                    'Year'               => $z['Year'] ?? null,
-                    'Bank_Name'          => $z['Bank_Name'] ?? null,
-                    'Bank_Account'       => $z['Account'] ?? null,
-                    'Transit'            => $z['Transit'] ?? null,
-                    'Institution'        => $z['Institution'] ?? null,
-                    'HSTGST'             => $z['HST_GST'] ?? null,
-                    'License_Class'      => $z['License_Class'] ?? null,
-                    'License_Exp'        => $z['License_Exp'] ?? null,
-                    'City_License_Exp'   => $z['City_License_Exp'] ?? null,
-                    'Criminal_Check_Exp' => $z['Criminal_Check_Exp'] ?? null,
-                    'Abstract_Exp'       => $z['Abstract_Exp'] ?? null,
-                    'Insurance_Exp'      => $z['Insurance_Exp'] ?? null,
-                    'Registration_Exp'   => $z['Registration_Exp'] ?? null,
-                    'Safety_Exp'         => $z['Safety_Exp'] ?? null,
-                    
-                    // Document File IDs
-                    'Vehicle_Safety'     => $z['Vehicle_Safety'] ?? null,
-                    'Insurance_Photo'    => $z['Insurance_Photo'] ?? null,
-                    'Drivers_License'    => $z['Drivers_License'] ?? null,
-                    'City_License_Permit'=> $z['City_License_Permit'] ?? null,
-                    'Car_Photo'          => $z['Car_Photo'] ?? null,
-                    'Vehicle_Ownership'  => $z['Vehicle_Ownership'] ?? null,
-                    'Drivers_Abstract'   => $z['Drivers_Abstract'] ?? null,
-                    'Criminal_Vulnerable'=> $z['Criminal_Vulnerable'] ?? null,
-                ]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return [
+                'id'                 => $zohoId,
+                'Full_Name'          => $z['Full_Name'] ?? null,
+                'City'               => $z['City'] ?? null,
+                'Phone'              => $z['Phone'] ?? null,
+                'Date_of_Birth'      => $z['Date_of_Birth'] ?? null,
+                'Make'               => $z['Make'] ?? null,
+                'Model'              => $z['Model'] ?? null,
+                'Year'               => $z['Year'] ?? null,
+                'Bank_Name'          => $z['Bank_Name'] ?? null,
+                'Bank_Account'       => $z['Account'] ?? null,
+                'Transit'            => $z['Transit'] ?? null,
+                'Institution'        => $z['Institution'] ?? null,
+                'HSTGST'             => $z['HST_GST'] ?? null,
+                'License_Class'      => $z['License_Class'] ?? null,
+                'License_Exp'        => $z['License_Exp'] ?? null,
+                'City_License_Exp'   => $z['City_License_Exp'] ?? null,
+                'Criminal_Check_Exp' => $z['Criminal_Check_Exp'] ?? null,
+                'Abstract_Exp'       => $z['Abstract_Exp'] ?? null,
+                'Insurance_Exp'      => $z['Insurance_Exp'] ?? null,
+                'Registration_Exp'   => $z['Registration_Exp'] ?? null,
+                'Safety_Exp'         => $z['Safety_Exp'] ?? null,
+                
+                // Document File IDs
+                'Vehicle_Safety'     => $z['Vehicle_Safety'] ?? null,
+                'Insurance_Photo'    => $z['Insurance_Photo'] ?? null,
+                'Drivers_License'    => $z['Drivers_License'] ?? null,
+                'City_License_Permit'=> $z['City_License_Permit'] ?? null,
+                'Car_Photo'          => $z['Car_Photo'] ?? null,
+                'Vehicle_Ownership'  => $z['Vehicle_Ownership'] ?? null,
+                'Drivers_Abstract'   => $z['Drivers_Abstract'] ?? null,
+                'Criminal_Vulnerable'=> $z['Criminal_Vulnerable'] ?? null,
+            ];
+        });
+
+        if (!$cachedData) {
+            return response()->json(['success' => false, 'message' => 'Driver not found in Zoho'], 404);
         }
+
+        return response()->json([
+            'success' => true,
+            'data' => $cachedData
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
+}
 
 public function updateDocument(Request $request): JsonResponse
 {
@@ -104,6 +111,7 @@ public function updateDocument(Request $request): JsonResponse
         $result = $this->zoho->uploadToFileField($zohoId, $fieldName, $targetFile);
 
         if ($result['success']) {
+            Cache::forget("driver_profile_{$zohoId}");
             $this->zoho->updateContact($zohoId, ['Tag' => [['name' => 'needs update']]]);
             
             return response()->json([
@@ -174,6 +182,7 @@ public function updateDocument(Request $request): JsonResponse
         ], 400);
         }
 
+        Cache::forget("driver_profile_{$zohoId}");
         $result = $this->zoho->updateContact($zohoId, $zohoData);
         try {
             $adminEmails = config('zoho.zoho_admin_emails');

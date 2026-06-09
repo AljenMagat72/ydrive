@@ -11,17 +11,7 @@ class AutoFleetService
   private const REFRESH_TOKEN_CACHE_KEY = 'autofleet_refresh_token';
   private const SERVICE_CACHE_PREFIX = 'autofleet_service:';
 
-  private string $refreshToken;
   private ?string $token = null;
-  private string $baseUrl;
-  private string $fleetId;
-
-  public function __construct()
-  {
-    $this->refreshToken = config('autofleet.refresh_token');
-    $this->baseUrl = config('autofleet.end_point');
-    $this->fleetId = config('autofleet.fleet_id');
-  }
 
   private function getHttpClient()
   {
@@ -33,7 +23,7 @@ class AutoFleetService
 
     return Http::withHeaders([
       'Authorization' => "Bearer $this->token",
-    ])->baseUrl($this->baseUrl);
+    ])->baseUrl(config('autofleet.end_point'));
   }
 
   private function ensureTokenLoaded(): void
@@ -45,14 +35,13 @@ class AutoFleetService
 
   public function refreshToken(): void
   {
-    $response = Http::post("$this->baseUrl/v1/login/refresh", [
-      'refreshToken' => $this->refreshToken,
+    $response = Http::post(config('autofleet.end_point')."/v1/login/refresh", [
+      'refreshToken' => config('autofleet.refresh_token'),
     ]);
 
     if ($response->ok()) {
       $data = $response->json();
       $this->token = $data['token'];
-      $this->refreshToken = $data['refreshToken'];
 
       Cache::put(self::TOKEN_CACHE_KEY, $this->token);
     } else {
@@ -236,10 +225,8 @@ class AutoFleetService
 
   public function getVendorList()
   {
-    $fleetId = $this->fleetId;
-
-    $response = $this->makeAuthenticatedRequest(function ($client) use ($fleetId) {
-      return $client->get("v1/vendors?fleetId=$fleetId");
+    $response = $this->makeAuthenticatedRequest(function ($client) {
+      return $client->get("v1/vendors?fleetId=".config('autofleet.fleet_id'));
     });
 
     return $response->json();
