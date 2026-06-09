@@ -209,6 +209,10 @@ class Driver extends BaseUser
                 }
             ]);
     }
+    public function routeNotificationForTwilio()
+    {
+        return $this->phone_number;
+    }
 
     public function scopeBelowAcceptanceRate(Builder $query)
     {

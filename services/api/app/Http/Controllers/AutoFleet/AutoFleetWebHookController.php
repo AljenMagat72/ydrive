@@ -17,6 +17,7 @@ use App\Models\ClientNotification;
 use App\Models\Driver;
 use App\Enums\ClientNotificationType;
 use App\Enums\RideStates;
+use Illuminate\Validation\ValidationException;
 use Notification;
 
 class AutoFleetWebHookController extends Controller
@@ -59,11 +60,7 @@ class AutoFleetWebHookController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::error('ride cancellation: invalid payload', [
-                'errors' => $validator->errors()->toArray(),
-                'payload' => $request->input('data'),
-            ]);
-            return;
+            throw new ValidationException($validator);
         }
 
         $rideId = $request->input('data.id');
@@ -128,12 +125,7 @@ class AutoFleetWebHookController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::error('ride review: invalid payload', [
-                'errors' => $validator->errors()->toArray(),
-                'payload' => $request->input('data'),
-            ]);
-
-            return;
+            throw new ValidationException($validator);
         }
 
         $rideId = $request->input('data.id');
