@@ -4,6 +4,7 @@ namespace App\Services\Autofleet;
 
 use App\Http\Integrations\Autofleet\AutofleetApi;
 use App\Models\VendorList;
+use Illuminate\Support\Facades\Log;
 
 class AutofleetVendorService
 {
@@ -19,6 +20,8 @@ class AutofleetVendorService
     {
         $response = $this->autofleetApi->vendors()->get(config('autofleet.fleet_id'));
         $vendors = $response->json();
+
+        Log::info($vendors);
 
         $normal = [];
         $variants = [];
@@ -47,6 +50,8 @@ class AutofleetVendorService
                 $row[$fields['id_field']] = $variant['id'] ?? null;
                 $row[$fields['name_field']] = $variant['name'] ?? null;
             }
+
+            Log::info($row['vendor_id']);
 
             VendorList::updateOrCreate(
                 ['vendor_id' => $row['vendor_id']],
