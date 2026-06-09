@@ -25,9 +25,6 @@ RUN install-php-extensions \
     tokenizer xml pdo_pgsql opcache
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-<<<<<<< HEAD
-WORKDIR /var/www
-=======
 
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
@@ -64,4 +61,3 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 80
 
 CMD ["/entrypoint.sh"]
->>>>>>> dev
