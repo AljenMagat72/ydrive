@@ -42,6 +42,15 @@ use Spatie\Activitylog\Support\LogOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereRole($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereUuid($value)
+ * @property string|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activities
+ * @property-read int|null $activities_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsCauser
+ * @property-read int|null $activities_as_causer_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read mixed $status
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Admin whereDeletedAt($value)
  * @mixin \Eloquent
  */
 

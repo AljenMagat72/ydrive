@@ -50,6 +50,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereUuid($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereZohoRiderId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client withoutTrashed()
  * @mixin \Eloquent
  */
 #[UseFactory(ClientFactory::class)]
