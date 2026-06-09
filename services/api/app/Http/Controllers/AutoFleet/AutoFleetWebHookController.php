@@ -157,8 +157,7 @@ class AutoFleetWebHookController extends Controller
         $max = config('features.notifications.five_star_review_per_window');
 
         $count = Cache::get($cacheKey, 0);
-
-        if ($count === $max) {
+        if ($count >= $max) {
             Log::info('ride review: hit window limit', ['count' => $count]);
             return;
         }

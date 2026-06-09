@@ -274,7 +274,7 @@ test('getLabels returns empty array when payload is missing', function () {
 
 test('updateLabels calls api with correct arguments', function () {
     Saloon::fake([
-        UpdateLabels::class => MockResponse::make(['payload' => []], 200),
+        UpdateLabels::class => MockResponse::make(['labels' => []], 200),
     ]);
 
     app(ChatwootContactService::class)->updateLabels('contact-123', ['vip']);
