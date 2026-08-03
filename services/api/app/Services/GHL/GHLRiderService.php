@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Services\Zoho;
+namespace App\Services\GHL;
 
-use App\Http\Integrations\Zoho\ZohoApi;
+use App\Http\Integrations\GHL\GHLApi;
 use App\Models\Clients\Client;
 use Cache;
 
-class ZohoRiderService
+class GHLRiderService
 {
     public function __construct(protected ZohoApi $zohoApi)
     {
