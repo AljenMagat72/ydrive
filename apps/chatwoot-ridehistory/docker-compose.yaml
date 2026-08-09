@@ -1,0 +1,10 @@
+services:
+  chatwoot-ridehistory:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Host:container — browse http://localhost:5000 ; logs may still say :3000 inside the container
+    ports:
+      - "5000:3000"
+    environment:
+      - NODE_ENV=production

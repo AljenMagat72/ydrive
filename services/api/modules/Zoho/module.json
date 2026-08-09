@@ -1,0 +1,11 @@
+{
+    "name": "Zoho",
+    "alias": "zoho",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Zoho\\Providers\\ZohoServiceProvider"
+    ],
+    "files": []
+}

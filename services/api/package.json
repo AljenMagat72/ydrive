@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "turbo": "^2.9.9"
+  },
+  "workspaces": [
+    "resources/frontend/*",
+    "resources/packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev"
+  },
+  "packageManager": "npm@11.5.1"
+}
