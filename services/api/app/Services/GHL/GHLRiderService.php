@@ -4,59 +4,69 @@ namespace App\Services\GHL;
 
 use App\Http\Integrations\GHL\GHLApi;
 use App\Models\Clients\Client;
-use Cache;
+use Illuminate\Support\Facades\Cache;
 
+/**
+ * Portfolio mock: syncs riders into GoHighLevel contacts.
+ */
 class GHLRiderService
 {
-    public function __construct(protected ZohoApi $zohoApi)
+    public function __construct(protected GHLApi $ghlApi)
     {
     }
 
-    public function findOrCreate(Client $client)
+    public function findOrCreate(Client $client): ?string
     {
-        return Cache::withoutOverlapping("zoho:rider:{$client->id}:create", function () use ($client) {
-            if ($client->fresh()->zoho_rider_id) {
-                return $client->zoho_rider_id;
+        return Cache::withoutOverlapping("ghl:rider:{$client->id}:create", function () use ($client) {
+            $existing = $this->findByPhone($client->phone_number);
+
+            if ($existing) {
+                return $existing;
             }
 
-            $zohoId = $this->updateOrCreate($client);
-
-            return $zohoId;
+            return $this->upsert($client);
         });
     }
 
-    public function updateOrCreate(Client $client)
+    public function updateOrCreate(Client $client): ?string
     {
-        $id = $this->upsert($client);
-
-        if (!$client->zoho_rider_id) {
-
-            $client->updateQuietly([
-                'zoho_rider_id' => $id,
-            ]);
-        }
-
-        return $id;
+        return $this->upsert($client);
     }
 
-    protected function upsert(Client $client)
+    public function findByPhone(?string $phone): ?string
     {
-        $response = $this->zohoApi->records('Riders')->upsert([
-            [
-                'Name' => "{$client->first_name}",
-                'Last_Name' => "{$client->last_name}",
-                'Phone_1' => "{$client->phone_number}",
-                'AutoFleet_ID' => "{$client->autofleet_client_id}",
-                'Device_Type' => "{$client->device_type}",
-                'Email' => "{$client->email}",
-                'Is_Email_Verified' => $client->email_verified_at != null,
-                'Is_Active' => $client->is_active,
-                'Created_At' => "{$client->created_at}",
-            ]
-        ], ['AutoFleet_ID']);
+        if (!$phone) {
+            return null;
+        }
 
-        $id = $response->json('data.0.details.id');
+        $response = $this->ghlApi->contacts()->search([
+            'query' => $phone,
+        ]);
 
-        return $id;
+        return $response->json('contacts.0.id');
+    }
+
+    protected function upsert(Client $client): ?string
+    {
+        $response = $this->ghlApi->contacts()->upsert([
+            'firstName' => $client->first_name,
+            'lastName' => $client->last_name,
+            'email' => $client->email,
+            'phone' => $client->phone_number,
+            'source' => 'YDrive App',
+            'tags' => ['rider', 'ydrive'],
+            'customFields' => [
+                [
+                    'key' => 'autofleet_client_id',
+                    'field_value' => (string) $client->autofleet_client_id,
+                ],
+                [
+                    'key' => 'device_type',
+                    'field_value' => (string) $client->device_type,
+                ],
+            ],
+        ]);
+
+        return $response->json('contact.id') ?? $response->json('id');
     }
 }
